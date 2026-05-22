@@ -1,0 +1,36 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Flutter / Dart
+flutter_frontend/build/
+flutter_frontend/.dart_tool/
+flutter_frontend/.flutter-plugins
+flutter_frontend/.flutter-plugins-dependencies
+flutter_frontend/.packages
+flutter_frontend/.pub-cache/
+flutter_frontend/.pub/
+flutter_frontend/ios/Pods/
+flutter_frontend/android/.gradle/
+flutter_frontend/android/local.properties
+flutter_frontend/**/*.iml
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
