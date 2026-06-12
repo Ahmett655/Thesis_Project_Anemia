@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/home_button.dart';
 import '../services/auth_service.dart';
 import '../services/assessment_service.dart';
 import '../services/theme_service.dart';
@@ -104,6 +105,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               onDarkBg: true,
                               onTap: () => Navigator.pop(context),
                             ),
+                            const SizedBox(width: 8),
+                            const HomeButton(onDarkBg: true),
                             const Spacer(),
                             const ThemeToggleButton(onDarkBg: true),
                           ],

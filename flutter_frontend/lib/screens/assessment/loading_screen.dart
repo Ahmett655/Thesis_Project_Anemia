@@ -43,18 +43,9 @@ class _LoadingScreenState extends State<LoadingScreen>
   Future<void> _callApi() async {
     await Future.delayed(const Duration(seconds: 3));
 
-    // Platform-aware URL:
-    // - Web / iOS Simulator: localhost works
-    // - Android Emulator: must use 10.0.2.2 to reach host machine
-    // - Physical device: needs your computer's LAN IP (e.g., 192.168.1.X)
-    String apiUrl;
-    if (kIsWeb) {
-      apiUrl = 'http://localhost:3000/api/predict';
-    } else if (defaultTargetPlatform == TargetPlatform.android) {
-      apiUrl = 'http://10.0.2.2:3000/api/predict';
-    } else {
-      apiUrl = 'http://localhost:3000/api/predict';
-    }
+    // Single LAN IP so Chrome (web) and physical mobile device both reach the
+    // same backend over Wi-Fi. Change if the computer's LAN IP changes.
+    const String apiUrl = 'http://192.168.8.70:3000/api/predict';
 
     try {
       debugPrint('[Loading] POST $apiUrl');

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../widgets/home_button.dart';
 import '../../models/assessment_data.dart';
 import '../../services/theme_service.dart';
 import '../../widgets/theme_toggle_button.dart';
@@ -119,6 +120,8 @@ class _SubmitScreenState extends State<SubmitScreen>
                               onDarkBg: true,
                               onTap: () => Navigator.pop(context),
                             ),
+                            const SizedBox(width: 8),
+                            const HomeButton(onDarkBg: true),
                             const Spacer(),
                             const ThemeToggleButton(onDarkBg: true),
                           ],

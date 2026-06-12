@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/home_button.dart';
 import '../../services/theme_service.dart';
 
 /// Detail screen showing iron-rich foods with images and full info.
@@ -206,6 +207,8 @@ class IronFoodsScreen extends StatelessWidget {
                                     color: Colors.white, size: 16),
                               ),
                             ),
+                            const SizedBox(width: 8),
+                            const HomeButton(onDarkBg: true),
                             const Spacer(),
                             Container(
                               padding: const EdgeInsets.symmetric(

@@ -5,14 +5,11 @@ import 'package:http/http.dart' as http;
 
 /// Centralized auth service that handles all calls to /api/auth/*
 class AuthService {
-  // Platform-aware base URL
-  static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:3000/api/auth';
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:3000/api/auth';
-    }
-    return 'http://localhost:3000/api/auth';
-  }
+  // Single LAN IP so Chrome (web) and physical mobile device both reach the
+  // same backend over Wi-Fi. Change this if the computer's LAN IP changes.
+  static const String _host = '192.168.8.70:3000';
+
+  static String get baseUrl => 'http://$_host/api/auth';
 
   // In-memory session (for demo / thesis use)
   static String? authToken;

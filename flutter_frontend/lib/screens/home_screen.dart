@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/theme_service.dart';
 import '../services/auth_service.dart';
+import '../services/result_cache_service.dart';
 import '../widgets/theme_toggle_button.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -360,35 +361,107 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
 
-                // ============ Profile + History button (logged in) ============
+                // ============ Profile + History buttons (logged in) ============
                 if (isLoggedIn) Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: OutlinedButton.icon(
-                      onPressed: () => Navigator.pushNamed(
-                          context, '/profile'),
-                      icon: Icon(Icons.history,
-                          color: context.textPrimary, size: 18),
-                      label: Text(
-                        'My Profile & History',
-                        style: TextStyle(
-                          color: context.textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 52,
+                          child: OutlinedButton.icon(
+                            onPressed: () => Navigator.pushNamed(
+                                context, '/profile'),
+                            icon: Icon(Icons.person_outline,
+                                color: context.textPrimary, size: 18),
+                            label: Text(
+                              'Profile',
+                              style: TextStyle(
+                                color: context.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                  color: context.borderSubtle,
+                                  width: 1.5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(
-                            color: context.borderSubtle, width: 1.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 52,
+                          child: OutlinedButton.icon(
+                            onPressed: () => Navigator.pushNamed(
+                                context, '/history'),
+                            icon: const Icon(Icons.insights,
+                                color: Color(0xFF7B1FA2), size: 18),
+                            label: const Text(
+                              'Dashboard',
+                              style: TextStyle(
+                                color: Color(0xFF7B1FA2),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                  color: Color(0xFF7B1FA2), width: 1.2),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ============ Admin panel button (admins only) ============
+                if (isLoggedIn &&
+                    (AuthService.currentUser?['role'] as String?) ==
+                        'admin')
+                  Padding(
+                    padding:
+                        const EdgeInsets.fromLTRB(24, 14, 24, 0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton.icon(
+                        onPressed: () =>
+                            Navigator.pushNamed(context, '/admin'),
+                        icon: const Icon(
+                            Icons.admin_panel_settings_outlined,
+                            color: Colors.white,
+                            size: 20),
+                        label: const Text(
+                          'Admin Panel',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6A1B9A),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+
+                // ============ Last cached result (offline) ============
+                const _LastResultCard(),
 
                 const SizedBox(height: 14),
 
@@ -452,6 +525,98 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Shows the last assessment result cached on this device (works offline).
+class _LastResultCard extends StatelessWidget {
+  const _LastResultCard();
+
+  Color _riskColor(int p) => switch (p) {
+        0 => const Color(0xFF26A69A),
+        1 => const Color(0xFFFFA726),
+        2 => const Color(0xFFE53935),
+        _ => const Color(0xFF9E9E9E),
+      };
+
+  String _riskLabel(int p) => switch (p) {
+        0 => 'Khatar Hooseyso',
+        1 => 'Khatar Dhexdhexaad',
+        2 => 'Khatar Sare',
+        _ => '—',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<CachedResult?>(
+      future: ResultCacheService.loadLastResult(),
+      builder: (context, snap) {
+        final r = snap.data;
+        if (r == null) return const SizedBox.shrink();
+        final color = _riskColor(r.predictionNumber);
+        final d = r.savedAt.toLocal();
+        final dateStr =
+            '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
+          child: GestureDetector(
+            onTap: () {
+              r.restore();
+              Navigator.pushNamed(context, '/result');
+            },
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: context.bgCard,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: color.withOpacity(0.35)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.assignment_turned_in_outlined,
+                        color: color, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Natiijadii ugu dambeysay · $dateStr',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: context.textMuted,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${_riskLabel(r.predictionNumber)} · ${r.confidence.toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: color,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right,
+                      color: context.textMuted, size: 20),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -53,4 +53,41 @@ const requireAuth = (req, res, next) => {
   }
 };
 
-module.exports = { optionalAuth, requireAuth };
+/**
+ * Admin-only: requires a valid token AND the user's role to be "admin".
+ * Role is checked against the database (not just the token) so revoking
+ * admin takes effect immediately.
+ */
+const requireAdmin = async (req, res, next) => {
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication required",
+    });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const User = require("../models/User");
+    const user = await User.findById(decoded.id).select("role email");
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Admin access required",
+      });
+    }
+    req.userId = decoded.id;
+    req.userEmail = user.email;
+    return next();
+  } catch (e) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired token",
+    });
+  }
+};
+
+module.exports = { optionalAuth, requireAuth, requireAdmin };

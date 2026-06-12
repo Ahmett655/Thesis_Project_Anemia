@@ -34,6 +34,8 @@ import 'screens/assessment/result_screen.dart';
 import 'screens/assessment/recommendations_screen.dart';
 import 'screens/assessment/iron_foods_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/history_screen.dart';
+import 'screens/admin/admin_dashboard_screen.dart';
 import 'models/assessment_data.dart';
 
 void main() {
@@ -95,6 +97,8 @@ class MyApp extends StatelessWidget {
         '/recommendations': (context) => const RecommendationsScreen(),
         '/iron-foods': (context) => const IronFoodsScreen(),
         '/profile': (context) => const ProfileScreen(),
+        '/history': (context) => const HistoryScreen(),
+        '/admin': (context) => const AdminDashboardScreen(),
     };
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/home_button.dart';
 import '../../models/assessment_data.dart';
 import '../../services/theme_service.dart';
 
@@ -99,6 +100,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                 ),
                               ),
                             ),
+                            const SizedBox(width: 8),
+                            const HomeButton(onDarkBg: true),
                             const Spacer(),
                             Container(
                               padding: const EdgeInsets.symmetric(

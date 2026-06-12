@@ -1,11 +1,262 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../models/assessment_data.dart';
+import '../../services/pdf_report_service.dart';
+import '../../services/result_cache_service.dart';
 import '../../services/theme_service.dart';
+import '../../widgets/home_button.dart';
 import '../../widgets/theme_toggle_button.dart';
 
-class ResultScreen extends StatelessWidget {
+class ResultScreen extends StatefulWidget {
   const ResultScreen({super.key});
+
+  @override
+  State<ResultScreen> createState() => _ResultScreenState();
+}
+
+class _ResultScreenState extends State<ResultScreen> {
+  final FlutterTts _tts = FlutterTts();
+  bool _isSpeaking = false;
+  late _ResultConfig _config;
+
+  // Languages supported by the device (loaded at runtime).
+  List<String> _availableLanguages = const [];
+  String _selectedLang = 'so-SO';
+
+  @override
+  void initState() {
+    super.initState();
+    final int prediction = AssessmentData.predictionNumber;
+    _config = _getConfig(prediction);
+    _initTtsAndSpeak();
+    // Cache the result locally so it can be viewed again offline.
+    ResultCacheService.saveCurrentResult();
+  }
+
+  /// Plain-text summary used for sharing via WhatsApp / SMS / etc.
+  String get _shareText {
+    final double confidence = AssessmentData.confidence;
+    final double hb = AssessmentData.hemoglobinValue;
+    return 'Natiijada Qiimeynta Anemia / Anemia Assessment Result\n'
+        '━━━━━━━━━━━━━━━━━━\n'
+        '${_config.riskLabelSomali} (${_config.riskLabelEnglish})\n'
+        'Kalsoonida / Confidence: ${confidence.toStringAsFixed(0)}%\n'
+        '${hb > 0 ? 'Hemoglobin: ${hb.toStringAsFixed(1)} g/dL\n' : ''}'
+        '━━━━━━━━━━━━━━━━━━\n'
+        '${_config.descSomali}\n'
+        '(${_config.descEnglish})';
+  }
+
+  Future<void> _shareResult() async {
+    // Share the styled PDF report (with charts) — falls back to plain
+    // text if PDF generation fails on this device.
+    try {
+      await PdfReportService.downloadReport();
+    } catch (e) {
+      debugPrint('[Share] PDF failed, falling back to text: $e');
+      try {
+        await Share.share(_shareText, subject: 'Anemia Assessment Result');
+      } catch (e2) {
+        debugPrint('[Share] text share failed: $e2');
+      }
+    }
+  }
+
+  Future<void> _downloadPdf() async {
+    try {
+      await PdfReportService.downloadReport();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('PDF lama sameyn karin. Isku day mar kale.'),
+        ),
+      );
+    }
+  }
+
+  /// Build the spoken text for a given language tag (e.g. "en-US", "ar-SA").
+  /// Falls back to English for languages we have not translated yet.
+  String _textFor(String langTag) {
+    final double confidence = AssessmentData.confidence;
+    final String code = langTag.toLowerCase().split('-').first;
+
+    switch (code) {
+      case 'so': // Somali
+        return '${_config.riskLabelSomali}. ${_config.descSomali} '
+            'Kalsoonida natiijada waa ${confidence.toStringAsFixed(0)} boqolkiiba. '
+            '${_config.meaningSomali}';
+      case 'ar': // Arabic
+        return _arabicText(confidence);
+      case 'sw': // Swahili
+        return _swahiliText(confidence);
+      default: // English fallback for everything else
+        return '${_config.riskLabelEnglish}. ${_config.descEnglish} '
+            'Confidence level is ${confidence.toStringAsFixed(0)} percent. '
+            '${_config.meaningEnglish}';
+    }
+  }
+
+  String _arabicText(double confidence) {
+    final int p = AssessmentData.predictionNumber;
+    final String level = p == 0
+        ? 'خطر منخفض'
+        : p == 1
+            ? 'خطر متوسط'
+            : p == 2
+                ? 'خطر مرتفع'
+                : 'غير معروف';
+    return 'نتيجة التقييم: $level لفقر الدم. '
+        'مستوى الثقة ${confidence.toStringAsFixed(0)} بالمئة. '
+        '${_config.meaningEnglish}';
+  }
+
+  String _swahiliText(double confidence) {
+    final int p = AssessmentData.predictionNumber;
+    final String level = p == 0
+        ? 'Hatari ndogo'
+        : p == 1
+            ? 'Hatari ya wastani'
+            : p == 2
+                ? 'Hatari kubwa'
+                : 'Haijulikani';
+    return 'Matokeo ya tathmini: $level ya upungufu wa damu. '
+        'Kiwango cha uhakika ni ${confidence.toStringAsFixed(0)} asilimia. '
+        '${_config.meaningEnglish}';
+  }
+
+  Future<void> _initTtsAndSpeak() async {
+    try {
+      _tts.setStartHandler(() {
+        if (mounted) setState(() => _isSpeaking = true);
+      });
+      _tts.setCompletionHandler(() {
+        if (mounted) setState(() => _isSpeaking = false);
+      });
+      _tts.setCancelHandler(() {
+        if (mounted) setState(() => _isSpeaking = false);
+      });
+      _tts.setErrorHandler((msg) {
+        debugPrint('[TTS] error: $msg');
+        if (mounted) setState(() => _isSpeaking = false);
+      });
+
+      // Load every language the device supports.
+      final dynamic langs = await _tts.getLanguages;
+      if (langs is List) {
+        final list = langs.map((e) => e.toString()).toList()..sort();
+        if (mounted) {
+          setState(() {
+            _availableLanguages = list;
+            // Prefer Somali if available, else English, else first.
+            _selectedLang = list.firstWhere(
+              (l) => l.toLowerCase().startsWith('so'),
+              orElse: () => list.firstWhere(
+                (l) => l.toLowerCase().startsWith('en'),
+                orElse: () => list.isNotEmpty ? list.first : 'en-US',
+              ),
+            );
+          });
+        }
+      }
+
+      await _tts.setSpeechRate(0.45);
+      await _tts.setVolume(1.0);
+      await _tts.setPitch(1.0);
+      await _tts.setLanguage(_selectedLang);
+
+      await Future.delayed(const Duration(milliseconds: 400));
+      await _tts.speak(_textFor(_selectedLang));
+    } catch (e) {
+      debugPrint('[TTS] init failed: $e');
+    }
+  }
+
+  Future<void> _changeLanguage(String lang) async {
+    setState(() => _selectedLang = lang);
+    await _tts.stop();
+    try {
+      await _tts.setLanguage(lang);
+    } catch (e) {
+      debugPrint('[TTS] setLanguage failed for $lang: $e');
+    }
+    await _tts.speak(_textFor(lang));
+  }
+
+  Future<void> _toggleSpeak() async {
+    if (_isSpeaking) {
+      await _tts.stop();
+      if (mounted) setState(() => _isSpeaking = false);
+    } else {
+      await _tts.speak(_textFor(_selectedLang));
+    }
+  }
+
+  Future<void> _pickLanguage() async {
+    if (_availableLanguages.isEmpty) return;
+    final chosen = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: SizedBox(
+            height: MediaQuery.of(ctx).size.height * 0.6,
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Dooro luuqada / Choose language',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _availableLanguages.length,
+                    itemBuilder: (_, i) {
+                      final lang = _availableLanguages[i];
+                      final isSelected = lang == _selectedLang;
+                      return ListTile(
+                        title: Text(lang),
+                        trailing: isSelected
+                            ? const Icon(Icons.check_circle,
+                                color: Colors.green)
+                            : null,
+                        onTap: () => Navigator.pop(ctx, lang),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (chosen != null && chosen != _selectedLang) {
+      await _changeLanguage(chosen);
+    }
+  }
+
+  @override
+  void dispose() {
+    _tts.stop();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +290,8 @@ class ResultScreen extends StatelessWidget {
                           icon: Icons.arrow_back_ios_new,
                           onTap: () => Navigator.pop(context),
                         ),
+                        const SizedBox(width: 6),
+                        const HomeButton(),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -51,6 +304,19 @@ class ResultScreen extends StatelessWidget {
                           ),
                         ),
                         const ThemeToggleButton(),
+                        const SizedBox(width: 6),
+                        _IconButton(
+                          icon: Icons.language,
+                          onTap: _pickLanguage,
+                        ),
+                        const SizedBox(width: 6),
+                        _IconButton(
+                          icon: _isSpeaking
+                              ? Icons.stop_circle_outlined
+                              : Icons.volume_up_rounded,
+                          onTap: _toggleSpeak,
+                        ),
+                        const SizedBox(width: 6),
                         _IconButton(
                           icon: Icons.refresh,
                           onTap: () {
@@ -67,11 +333,22 @@ class ResultScreen extends StatelessWidget {
                   ),
                 ),
 
-                // Hero section: Big severity badge
+                // Hero section: Big severity badge (animated entrance)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                    child: Container(
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: const Duration(milliseconds: 700),
+                      curve: Curves.easeOutBack,
+                      builder: (context, t, child) => Opacity(
+                        opacity: t.clamp(0.0, 1.0),
+                        child: Transform.scale(
+                          scale: 0.85 + 0.15 * t,
+                          child: child,
+                        ),
+                      ),
+                      child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
                           vertical: 32, horizontal: 20),
@@ -168,6 +445,7 @@ class ResultScreen extends StatelessWidget {
                           ),
                         ],
                       ),
+                      ),
                     ),
                   ),
                 ),
@@ -214,14 +492,21 @@ class ResultScreen extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 10),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: LinearProgressIndicator(
-                                value: (confidence / 100).clamp(0.0, 1.0),
-                                minHeight: 10,
-                                backgroundColor: const Color(0xFFEDEFF3),
-                                valueColor:
-                                    AlwaysStoppedAnimation(config.heroColor),
+                            TweenAnimationBuilder<double>(
+                              tween: Tween(
+                                  begin: 0.0,
+                                  end: (confidence / 100).clamp(0.0, 1.0)),
+                              duration: const Duration(milliseconds: 1200),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, v, _) => ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: LinearProgressIndicator(
+                                  value: v,
+                                  minHeight: 10,
+                                  backgroundColor: const Color(0xFFEDEFF3),
+                                  valueColor: AlwaysStoppedAnimation(
+                                      config.heroColor),
+                                ),
                               ),
                             ),
                           ],
@@ -430,6 +715,72 @@ class ResultScreen extends StatelessWidget {
 
                       const SizedBox(height: 10),
 
+                      // PDF download + Share row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 52,
+                              child: OutlinedButton.icon(
+                                onPressed: _downloadPdf,
+                                icon: const Icon(
+                                    Icons.picture_as_pdf_outlined,
+                                    size: 20),
+                                label: const Text(
+                                  'PDF Report',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor:
+                                      const Color(0xFFE53935),
+                                  side: const BorderSide(
+                                      color: Color(0xFFE53935),
+                                      width: 1.2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(14),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: SizedBox(
+                              height: 52,
+                              child: OutlinedButton.icon(
+                                onPressed: _shareResult,
+                                icon:
+                                    const Icon(Icons.share, size: 20),
+                                label: const Text(
+                                  'La Wadaag',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor:
+                                      const Color(0xFF1565C0),
+                                  side: const BorderSide(
+                                      color: Color(0xFF1565C0),
+                                      width: 1.2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(14),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
                       SizedBox(
                         width: double.infinity,
                         height: 52,
@@ -529,42 +880,54 @@ class ResultScreen extends StatelessWidget {
           heroColor: const Color(0xFF26A69A),
           icon: Icons.sentiment_satisfied_alt,
           riskLabelSomali: 'Khatar Hooseyso',
+          riskLabelEnglish: 'Low Risk',
           descSomali: 'Waxaad leedahay khatar yaraanta dhiigga oo hooseysa.',
           descEnglish: 'You have a Mild (low) risk of anemia.',
           meaningSomali:
               'Macnaheedu waa in jirkaagu uu leeyahay heerar caafimaad oo wanaagsan oo ku saabsan unugyada dhiigga cas. Sii wad nafaqo wanaagsan oo cunto ah birta leh.',
+          meaningEnglish:
+              'This means your body has healthy red blood cell levels. Keep eating a balanced diet rich in iron.',
         );
       case 1: // Moderate
         return _ResultConfig(
           heroColor: const Color(0xFFFFA726),
           icon: Icons.warning_amber_rounded,
           riskLabelSomali: 'Khatar Dhex Dhexaad',
+          riskLabelEnglish: 'Moderate Risk',
           descSomali:
               'Waxaad leedahay khatar yaraanta dhiigga oo dhexdhexaad ah.',
           descEnglish: 'You have a Moderate risk of anemia.',
           meaningSomali:
               'Macnaheedu waa in heerarka unugyada dhiigga cas ay ka hooseeyaan caadiga. Waxaa fiican in aad la tashato dhakhtar si aad u hesho talo iyo daawayn ku habboon.',
+          meaningEnglish:
+              'Your red blood cell levels are below normal. It is best to consult a doctor for proper advice and treatment.',
         );
       case 2: // Severe
         return _ResultConfig(
           heroColor: const Color(0xFFE53935),
           icon: Icons.priority_high,
           riskLabelSomali: 'Khatar Sare',
+          riskLabelEnglish: 'High Risk',
           descSomali:
               'Waxaad leedahay khatar yaraanta dhiigga oo aad u sareeysa.',
           descEnglish: 'You have a Severe (high) risk of anemia.',
           meaningSomali:
               'Macnaheedu waa in heerarka unugyada dhiigga cas ay aad uga hooseeyaan caadiga. Si dhakhso ah u aad caafimaadka oo daawayn ka hel — tani waxay u baahan tahay daryeel caafimaad oo degdeg ah.',
+          meaningEnglish:
+              'Your red blood cell levels are significantly below normal. Seek medical care immediately — this requires urgent attention.',
         );
       default: // Error / Unknown
         return _ResultConfig(
           heroColor: const Color(0xFF9E9E9E),
           icon: Icons.help_outline,
           riskLabelSomali: 'Cilad Soo Gashay',
+          riskLabelEnglish: 'Error',
           descSomali: 'Lama heli karin natiijo. Fadlan isku day mar kale.',
           descEnglish: 'No result available. Please try again.',
           meaningSomali:
               'Server-ka lama gaarin. Hubi internetkaaga oo isku day inaad qaado qiimeynta mar kale.',
+          meaningEnglish:
+              'Could not reach the server. Check your internet and try the assessment again.',
         );
     }
   }
@@ -574,17 +937,21 @@ class _ResultConfig {
   final Color heroColor;
   final IconData icon;
   final String riskLabelSomali;
+  final String riskLabelEnglish;
   final String descSomali;
   final String descEnglish;
   final String meaningSomali;
+  final String meaningEnglish;
 
   _ResultConfig({
     required this.heroColor,
     required this.icon,
     required this.riskLabelSomali,
+    required this.riskLabelEnglish,
     required this.descSomali,
     required this.descEnglish,
     required this.meaningSomali,
+    required this.meaningEnglish,
   });
 }
 

@@ -6,13 +6,11 @@ import 'auth_service.dart';
 
 /// Service for prediction + history API calls.
 class AssessmentService {
-  static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:3000/api/predict';
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:3000/api/predict';
-    }
-    return 'http://localhost:3000/api/predict';
-  }
+  // Single LAN IP so Chrome (web) and physical mobile device both reach the
+  // same backend over Wi-Fi. Change this if the computer's LAN IP changes.
+  static const String _host = '192.168.8.70:3000';
+
+  static String get baseUrl => 'http://$_host/api/predict';
 
   static Map<String, String> _headers() {
     final headers = <String, String>{'Content-Type': 'application/json'};

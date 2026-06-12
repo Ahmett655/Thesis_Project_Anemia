@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/theme_service.dart';
+import '../../../widgets/home_button.dart';
 
 /// Reusable widget for all Yes/No and multi-choice questions.
 /// Now supports per-question theming via [QuestionTheme].
@@ -91,6 +92,8 @@ class QuestionWidget extends StatelessWidget {
                                 ),
                               ),
                             ),
+                            const SizedBox(width: 8),
+                            const HomeButton(onDarkBg: true),
                             const Spacer(),
                             Container(
                               padding: const EdgeInsets.symmetric(

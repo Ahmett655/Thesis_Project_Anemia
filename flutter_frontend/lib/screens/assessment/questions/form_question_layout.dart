@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/theme_service.dart';
+import '../../../widgets/home_button.dart';
 import 'question_widget.dart' show QuestionTheme;
 
 /// Same beautiful gradient header as QuestionWidget, but the body is a
@@ -81,6 +82,8 @@ class FormQuestionLayout extends StatelessWidget {
                                     color: Colors.white, size: 16),
                               ),
                             ),
+                            const SizedBox(width: 8),
+                            const HomeButton(onDarkBg: true),
                             const Spacer(),
                             Container(
                               padding: const EdgeInsets.symmetric(
