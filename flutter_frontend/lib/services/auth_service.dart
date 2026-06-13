@@ -1,15 +1,13 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart'
-    show kIsWeb, defaultTargetPlatform, TargetPlatform, debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
+import 'api_config.dart';
 
 /// Centralized auth service that handles all calls to /api/auth/*
 class AuthService {
-  // Single LAN IP so Chrome (web) and physical mobile device both reach the
-  // same backend over Wi-Fi. Change this if the computer's LAN IP changes.
-  static const String _host = '192.168.8.70:3000';
-
-  static String get baseUrl => 'http://$_host/api/auth';
+  // Platform-aware base URL (web -> localhost, phone -> LAN IP).
+  // Change the IP in api_config.dart if needed.
+  static String get baseUrl => '${ApiConfig.apiBase}/auth';
 
   // In-memory session (for demo / thesis use)
   static String? authToken;

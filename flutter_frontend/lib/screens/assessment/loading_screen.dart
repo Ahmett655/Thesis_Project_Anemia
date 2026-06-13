@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform, debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../models/assessment_data.dart';
 import '../../services/assessment_service.dart';
+import '../../services/api_config.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -43,9 +44,8 @@ class _LoadingScreenState extends State<LoadingScreen>
   Future<void> _callApi() async {
     await Future.delayed(const Duration(seconds: 3));
 
-    // Single LAN IP so Chrome (web) and physical mobile device both reach the
-    // same backend over Wi-Fi. Change if the computer's LAN IP changes.
-    const String apiUrl = 'http://192.168.8.70:3000/api/predict';
+    // Platform-aware URL (web -> localhost, phone -> LAN IP).
+    final String apiUrl = '${ApiConfig.apiBase}/predict';
 
     try {
       debugPrint('[Loading] POST $apiUrl');

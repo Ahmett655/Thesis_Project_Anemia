@@ -2,11 +2,12 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
+import 'api_config.dart';
 
 /// Admin-only API calls (/api/admin/*). All require an admin token.
 class AdminService {
-  static const String _host = '192.168.8.70:3000';
-  static String get _base => 'http://$_host/api/admin';
+  static String get _host => ApiConfig.host;
+  static String get _base => '${ApiConfig.apiBase}/admin';
   static const Duration _timeout = Duration(seconds: 15);
 
   static Map<String, String> _headers() => {
