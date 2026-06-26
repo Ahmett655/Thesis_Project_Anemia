@@ -29,16 +29,22 @@ import 'screens/assessment/questions/q_men_tired_screen.dart';
 import 'screens/assessment/questions/q_men_dizzy_screen.dart';
 import 'screens/assessment/questions/q_hemoglobin_screen.dart';
 import 'screens/assessment/submit_screen.dart';
+import 'screens/assessment/payment_screen.dart';
 import 'screens/assessment/loading_screen.dart';
 import 'screens/assessment/result_screen.dart';
 import 'screens/assessment/recommendations_screen.dart';
 import 'screens/assessment/iron_foods_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/history_screen.dart';
+import 'screens/health_facilities_screen.dart';
+import 'screens/chat_screen.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
 import 'models/assessment_data.dart';
+import 'services/reminder_service.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  ReminderService.init();
   runApp(const MyApp());
 }
 
@@ -92,12 +98,15 @@ class MyApp extends StatelessWidget {
         '/q-men-dizzy': (context) => const QMenDizzyScreen(),
         '/q-hemoglobin': (context) => const QHemoglobinScreen(),
         '/submit': (context) => const SubmitScreen(),
+        '/payment': (context) => const PaymentScreen(),
         '/loading': (context) => const LoadingScreen(),
         '/result': (context) => const ResultScreen(),
         '/recommendations': (context) => const RecommendationsScreen(),
         '/iron-foods': (context) => const IronFoodsScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/history': (context) => const HistoryScreen(),
+        '/health-facilities': (context) => const HealthFacilitiesScreen(),
+        '/chat': (context) => const ChatScreen(),
         '/admin': (context) => const AdminDashboardScreen(),
     };
   }

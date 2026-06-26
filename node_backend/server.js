@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
@@ -5,6 +6,8 @@ const connectDB = require("./src/config/db");
 const predictRoutes = require("./src/routes/predictRoutes");
 const authRoutes = require("./src/routes/authRoutes");
 const adminRoutes = require("./src/routes/adminRoutes");
+const paymentRoutes = require("./src/routes/paymentRoutes");
+const chatRoutes = require("./src/routes/chatRoutes");
 const User = require("./src/models/User");
 
 const app = express();
@@ -49,6 +52,8 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/predict", predictRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/payment", paymentRoutes);
+app.use("/api/chat", chatRoutes);
 
 app.listen(3000, () => {
   console.log("Server running on http://localhost:3000");
@@ -65,4 +70,8 @@ app.listen(3000, () => {
   console.log("  DELETE /api/admin/users/:id");
   console.log("  POST   /api/admin/users/:id/reset-password");
   console.log("  DELETE /api/admin/assessments/:id");
+  console.log("Payment endpoint:");
+  console.log("  POST   /api/payment/charge");
+  console.log("Chat endpoint:");
+  console.log("  POST   /api/chat");
 });

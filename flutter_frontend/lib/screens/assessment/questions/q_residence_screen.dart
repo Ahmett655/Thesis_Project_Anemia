@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/assessment_data.dart';
 import '../../../services/theme_service.dart';
+import '../../../services/location_service.dart';
 import 'question_widget.dart' show QuestionTheme;
 import 'form_question_layout.dart';
 
@@ -16,6 +17,51 @@ class _QResidenceScreenState extends State<QResidenceScreen> {
   final _degmoController = TextEditingController();
   final _tuuloController = TextEditingController();
   final _xaafadController = TextEditingController();
+
+  bool _locating = false;
+
+  Future<void> _useMyLocation() async {
+    setState(() => _locating = true);
+    try {
+      final addr = await LocationService.getCurrentAddress();
+      if (!mounted) return;
+      setState(() {
+        if (addr.region.isNotEmpty) _gobolController.text = addr.region;
+        if (addr.district.isNotEmpty) _degmoController.text = addr.district;
+        if (addr.village.isNotEmpty) _tuuloController.text = addr.village;
+        if (addr.neighborhood.isNotEmpty) {
+          _xaafadController.text = addr.neighborhood;
+        }
+      });
+      // Save coordinates too (useful for records / mapping).
+      AssessmentData.saveAnswer('latitude', addr.latitude);
+      AssessmentData.saveAnswer('longitude', addr.longitude);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFF2E7D32),
+          content: Text(addr.hasAnyText
+              ? 'Goobtaada waa la helay oo la buuxiyay ✓'
+              : 'Goobta waa la helay, laakiin cinwaanka si buuxda looma helin — gacanta ku qor.'),
+        ),
+      );
+    } on LocationException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            backgroundColor: const Color(0xFFE53935),
+            content: Text(e.message)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            backgroundColor: Color(0xFFE53935),
+            content: Text('Location lama heli karin. Isku day mar kale.')),
+      );
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -49,6 +95,47 @@ class _QResidenceScreenState extends State<QResidenceScreen> {
         Navigator.pushNamed(context, next);
       },
       children: [
+        // Auto-detect location button
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: OutlinedButton.icon(
+            onPressed: _locating ? null : _useMyLocation,
+            icon: _locating
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Color(0xFF00796B)),
+                  )
+                : const Icon(Icons.my_location, size: 20),
+            label: Text(
+              _locating
+                  ? 'Goobta waa la raadinayaa...'
+                  : 'Isticmaal Goobtayda (Use my location)',
+              style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w700),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF00796B),
+              side: const BorderSide(color: Color(0xFF00796B), width: 1.4),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Center(
+          child: Text(
+            'ama gacanta ku qor (or type manually)',
+            style: TextStyle(
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+                color: context.textMuted),
+          ),
+        ),
+        const SizedBox(height: 16),
         _label('Gobolka (Region)'),
         _input(_gobolController, 'Tusaale: Banadir', Icons.map_outlined,
             theme.accentColor),

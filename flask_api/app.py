@@ -321,7 +321,7 @@ def predict():
             "prediction_number": int(prediction[0]),
             "prediction_label": predicted_label[0],
             "confidence": confidence,
-            "method": "Machine Learning (Random Forest)"
+            "method": "Machine Learning (XGBoost + SMOTE)"
         })
 
     except Exception as e:

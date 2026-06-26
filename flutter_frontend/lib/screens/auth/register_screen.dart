@@ -3,6 +3,7 @@ import '../../services/auth_service.dart';
 import '../../services/theme_service.dart';
 import '../../widgets/top_message_banner.dart';
 import '../../widgets/theme_toggle_button.dart';
+import '../../widgets/google_signin_button.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -284,17 +285,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ],
                       ),
                       const SizedBox(height: 14),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _socialButton(Icons.facebook,
-                              const Color(0xFF1877F2)),
-                          const SizedBox(width: 14),
-                          _socialButton(Icons.g_mobiledata,
-                              const Color(0xFFEA4335)),
-                          const SizedBox(width: 14),
-                          _socialButton(Icons.apple, Colors.black),
-                        ],
+                      // Working Google sign-up (web renders Google's button).
+                      GoogleSignInButton(
+                        onSuccess: () {
+                          TopMessageBanner.success(
+                            context,
+                            'Account ready!',
+                            title: 'Soo Dhowow!',
+                          );
+                          Future.delayed(
+                              const Duration(milliseconds: 700), () {
+                            if (mounted) {
+                              Navigator.pushReplacementNamed(
+                                  context, '/home');
+                            }
+                          });
+                        },
+                        onError: (msg) =>
+                            TopMessageBanner.error(context, msg),
                       ),
                       const SizedBox(height: 16),
                       Center(
@@ -399,16 +407,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _socialButton(IconData icon, Color color) {
-    return Container(
-      width: 64,
-      height: 48,
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        border: Border.all(color: context.borderSubtle),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Icon(icon, color: color, size: 26),
-    );
-  }
 }

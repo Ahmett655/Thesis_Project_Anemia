@@ -92,6 +92,33 @@ class AuthService {
     }
   }
 
+  /// POST /api/auth/google — exchange a Google ID token for our JWT.
+  static Future<AuthResult> googleSignInWithToken(String idToken) async {
+    try {
+      final url = Uri.parse('$baseUrl/google');
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'idToken': idToken}),
+          )
+          .timeout(_timeout);
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 200 && data['success'] == true) {
+        authToken = data['token'] as String?;
+        currentUser = data['user'] as Map<String, dynamic>?;
+        return AuthResult.success(
+            data['message'] as String? ?? 'Signed in with Google');
+      }
+      return AuthResult.failure(
+          data['message'] as String? ?? 'Google sign-in failed');
+    } catch (e) {
+      debugPrint('[AuthService] google exception: $e');
+      return AuthResult.failure('Connection error: $e');
+    }
+  }
+
   /// POST /api/auth/forgot-password
   static Future<AuthResult> forgotPassword({required String email}) async {
     try {

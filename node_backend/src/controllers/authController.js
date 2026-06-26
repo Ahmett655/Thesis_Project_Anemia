@@ -1,9 +1,45 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const jwksClient = require("jwks-rsa");
 const User = require("../models/User");
 
 const JWT_SECRET = process.env.JWT_SECRET || "anemia_thesis_secret_2026";
 const JWT_EXPIRES_IN = "7d";
+
+// Google OAuth Web Client ID — used to verify ID tokens from the app.
+const GOOGLE_CLIENT_ID =
+  process.env.GOOGLE_CLIENT_ID ||
+  "455968430035-8faqf78i2ibkvk02t6o09l9r236lcbrc.apps.googleusercontent.com";
+
+// Verify Google ID tokens by signature against Google's public keys.
+// We allow a large clockTolerance so a misconfigured/slow device clock
+// does not cause "Token used too early/late" failures.
+const _googleKeys = jwksClient({
+  jwksUri: "https://www.googleapis.com/oauth2/v3/certs",
+  cache: true,
+  rateLimit: true,
+});
+function _getGoogleKey(header, callback) {
+  _googleKeys.getSigningKey(header.kid, (err, key) => {
+    if (err) return callback(err);
+    callback(null, key.getPublicKey());
+  });
+}
+function verifyGoogleIdToken(idToken) {
+  return new Promise((resolve, reject) => {
+    jwt.verify(
+      idToken,
+      _getGoogleKey,
+      {
+        audience: GOOGLE_CLIENT_ID,
+        issuer: ["https://accounts.google.com", "accounts.google.com"],
+        algorithms: ["RS256"],
+        clockTolerance: 21600, // 6 hours, tolerate bad device clocks
+      },
+      (err, payload) => (err ? reject(err) : resolve(payload))
+    );
+  });
+}
 
 // ============================================================
 // REGISTER — POST /api/auth/register
@@ -316,10 +352,72 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// ============================================================
+// GOOGLE SIGN-IN — POST /api/auth/google
+// Body: { idToken }  (Google ID token from the app)
+// Verifies the token, then logs in or auto-registers the user.
+// ============================================================
+const googleSignIn = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Google idToken is required" });
+    }
+
+    // Verify the token signature against Google's public keys.
+    const payload = await verifyGoogleIdToken(idToken);
+    if (!payload || !payload.email) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid Google token" });
+    }
+
+    const email = payload.email.toLowerCase().trim();
+    const name = payload.name || email.split("@")[0];
+
+    // Find existing user or create one (no password — Google-only account).
+    let user = await User.findOne({ email });
+    if (!user) {
+      const randomPwd = await bcrypt.hash(
+        `google_${payload.sub}_${Date.now()}`,
+        10
+      );
+      user = await User.create({ name, email, password: randomPwd });
+      console.log(`[Auth] Google registered: ${email}`);
+    } else {
+      console.log(`[Auth] Google login: ${email}`);
+    }
+
+    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
+      expiresIn: JWT_EXPIRES_IN,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Google sign-in successful",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("[Auth] Google sign-in error:", error.message);
+    return res
+      .status(401)
+      .json({ success: false, message: "Google sign-in failed" });
+  }
+};
+
 module.exports = {
   register,
   login,
   forgotPassword,
   verifyOtp,
   resetPassword,
+  googleSignIn,
 };

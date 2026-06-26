@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/theme_service.dart';
 import '../services/auth_service.dart';
 import '../services/result_cache_service.dart';
+import '../services/reminder_service.dart';
 import '../widgets/theme_toggle_button.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -13,6 +14,14 @@ class HomeScreen extends StatelessWidget {
         AuthService.authToken!.isNotEmpty;
     return Scaffold(
       backgroundColor: context.bgPage,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.pushNamed(context, '/chat'),
+        backgroundColor: const Color(0xFF7B1FA2),
+        icon: const Icon(Icons.smart_toy_outlined, color: Colors.white),
+        label: const Text('Caawiye AI',
+            style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w700)),
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
@@ -292,6 +301,38 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
 
+                const SizedBox(height: 12),
+
+                // ============ Nearby health facilities ============
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.pushNamed(
+                          context, '/health-facilities'),
+                      icon: const Icon(Icons.location_on_outlined,
+                          color: Color(0xFF00838F), size: 20),
+                      label: const Text(
+                        'Xarumaha Caafimaad ee u dhow',
+                        style: TextStyle(
+                          color: Color(0xFF00838F),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(
+                            color: Color(0xFF00838F), width: 1.3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 14),
 
                 // ============ Secondary: Register & Login OR Profile ============
@@ -460,6 +501,9 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
 
+                // ============ Re-assessment reminder ============
+                const _ReminderCard(),
+
                 // ============ Last cached result (offline) ============
                 const _LastResultCard(),
 
@@ -525,6 +569,90 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Shows when the next anemia re-assessment is due (set after each result).
+class _ReminderCard extends StatelessWidget {
+  const _ReminderCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<int?>(
+      future: ReminderService.daysUntilNext(),
+      builder: (context, snap) {
+        final days = snap.data;
+        if (days == null) return const SizedBox.shrink();
+        final overdue = days <= 0;
+        final color =
+            overdue ? const Color(0xFFE53935) : const Color(0xFF00897B);
+        final label = overdue
+            ? 'Waqtigii dib-u-qiimeynta wuu gaaray!'
+            : 'Dib-u-qiimeyn: $days maalmood ka dib';
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: color.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                      overdue
+                          ? Icons.notifications_active
+                          : Icons.event_available_outlined,
+                      color: color,
+                      size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: color,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Reminder to re-check your anemia risk',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: context.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (overdue)
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(
+                        context, '/start-assessment'),
+                    child: const Text('Qiimee',
+                        style: TextStyle(
+                            color: Color(0xFFE53935),
+                            fontWeight: FontWeight.w700)),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

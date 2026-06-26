@@ -1,0 +1,29 @@
+ANEMIA RISK CLASSIFICATION — 8-MODEL COMPARISON
+=======================================================
+
+Dataset: 12472 samples, 77 features
+Classes: ['Mild', 'Moderate', 'Severe']
+Split: 9977 train / 2495 test (80/20, random_state=42)
+
+ Rank                Model  Accuracy  Precision (weighted)  Recall (weighted)  F1 (weighted)  F1 (macro)  Train time (s)
+    1              XGBoost  0.985170              0.985452           0.985170       0.985156    0.985666            0.80
+    2        Decision Tree  0.977555              0.977558           0.977555       0.977556    0.976273            0.04
+    3        Random Forest  0.957916              0.960656           0.957916       0.957747    0.960041            0.80
+    4 Neural Network (MLP)  0.941082              0.941252           0.941082       0.941068    0.948549           14.29
+    5  Logistic Regression  0.882565              0.882893           0.882565       0.882655    0.895786            0.93
+    6                  SVM  0.867735              0.869926           0.867735       0.866572    0.814620            4.05
+    7                  KNN  0.725852              0.729678           0.725852       0.722690    0.633102            0.03
+    8          Naive Bayes  0.052104              0.596784           0.052104       0.044332    0.049178            0.03
+
+Best model (by macro-F1): XGBoost
+
+Classification report (best model):
+              precision    recall  f1-score   support
+
+        Mild       1.00      0.97      0.98      1099
+    Moderate       0.98      1.00      0.99      1320
+      Severe       0.97      1.00      0.99        76
+
+    accuracy                           0.99      2495
+   macro avg       0.98      0.99      0.99      2495
+weighted avg       0.99      0.99      0.99      2495

@@ -3,8 +3,10 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../models/assessment_data.dart';
+import '../../services/explainability_service.dart';
 import '../../services/pdf_report_service.dart';
 import '../../services/result_cache_service.dart';
+import '../../services/reminder_service.dart';
 import '../../services/theme_service.dart';
 import '../../widgets/home_button.dart';
 import '../../widgets/theme_toggle_button.dart';
@@ -33,6 +35,8 @@ class _ResultScreenState extends State<ResultScreen> {
     _initTtsAndSpeak();
     // Cache the result locally so it can be viewed again offline.
     ResultCacheService.saveCurrentResult();
+    // Schedule a re-assessment reminder (30 days).
+    ReminderService.scheduleReassessment(days: 30);
   }
 
   /// Plain-text summary used for sharing via WhatsApp / SMS / etc.
@@ -623,6 +627,9 @@ class _ResultScreenState extends State<ResultScreen> {
 
                       const SizedBox(height: 12),
 
+                      // Factors that influenced the result (explainability)
+                      _buildFactorsCard(context),
+
                       // WHO reference card (if WHO method used)
                       if (method.contains('WHO'))
                         _DetailCard(
@@ -850,6 +857,92 @@ class _ResultScreenState extends State<ResultScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildFactorsCard(BuildContext context) {
+    final factors = ExplainabilityService.topFactors();
+    if (factors.isEmpty) return const SizedBox.shrink();
+    return Column(
+      children: [
+        _DetailCard(
+          title: 'Sababaha saamaynta lahaa',
+          titleEng: 'What influenced this result',
+          child: Column(
+            children: [
+              for (final f in factors)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: f.color.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(f.icon, color: f.color, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              f.titleSo,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: context.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              f.titleEn,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontStyle: FontStyle.italic,
+                                color: context.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: f.color.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          f.severityLabel,
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: f.color,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  'Tani waa sharaxaad lagu fududeeyay; ma aha go\'aan caafimaad.',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontStyle: FontStyle.italic,
+                    color: context.textMuted,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 
