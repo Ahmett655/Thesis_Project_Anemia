@@ -10,8 +10,20 @@ model = joblib.load("anemia_model.pkl")
 label_encoder = joblib.load("label_encoder.pkl")
 model_columns = joblib.load("model_columns.pkl")
 
+# Separate model trained WITHOUT hemoglobin, used when the user provides no
+# lab value — gives honest (lower) confidence instead of a misleading ~99%
+# built on an imputed hemoglobin value.
+try:
+    model_nohb = joblib.load("anemia_model_nohb.pkl")
+    model_columns_nohb = joblib.load("model_columns_nohb.pkl")
+    print("[Flask] No-hemoglobin model loaded.")
+except Exception as e:
+    model_nohb = None
+    model_columns_nohb = None
+    print(f"[Flask] No-Hb model not found ({e}); falling back to main model.")
 
-def map_frontend_to_model(data: dict) -> dict:
+
+def map_frontend_to_model(data: dict, columns=None) -> dict:
     """
     Convert raw frontend payload (e.g., {"age_group": "29-50", "education": "primary"})
     into the one-hot encoded format the model expects.
@@ -19,8 +31,9 @@ def map_frontend_to_model(data: dict) -> dict:
     All model columns start at 0. We then set 1 for the appropriate one-hot column
     based on user answers.
     """
-    # Initialize all columns to 0
-    row = {col: 0 for col in model_columns}
+    # Initialize all columns to 0 (use the given column set, default = full model)
+    cols = columns if columns is not None else model_columns
+    row = {col: 0 for col in cols}
 
     category = (data.get("category") or "").lower()
 
@@ -136,18 +149,37 @@ def map_frontend_to_model(data: dict) -> dict:
     # IMPORTANT: Training data stores hemoglobin with the decimal point removed
     # ("1 decimal" in column name = divide by 10). So 12.5 g/dL -> 125 stored.
     # We multiply user's input by 10 to match the model's expected scale.
+    # Training-set median hemoglobin (scaled, "1 decimal" form). Used to
+    # impute when the user does NOT provide a measurement — otherwise the
+    # column would stay 0, which the model reads as 0 g/dL (catastrophically
+    # severe anemia) and wrongly predicts "Severe" with high confidence.
+    HB_MEDIAN_SMOKE = 107.0   # "...adjusted for altitude and smoking"
+    HB_MEDIAN_ALT = 96.0      # "...adjusted for altitude"
+    COL_HB_SMOKE = "Hemoglobin level adjusted for altitude and smoking (g/dl - 1 decimal)"
+    COL_HB_ALT = "Hemoglobin level adjusted for altitude (g/dl - 1 decimal)"
+
     has_test = (data.get("has_hemoglobin_test") or "").strip().lower()
+    hb_set = False
     if has_test == "yes":
         try:
             hb_value = float(data.get("hemoglobin_value") or 0)
             if hb_value > 0:
                 hb_scaled = hb_value * 10  # 12.5 g/dL -> 125
-                if "Hemoglobin level adjusted for altitude and smoking (g/dl - 1 decimal)" in row:
-                    row["Hemoglobin level adjusted for altitude and smoking (g/dl - 1 decimal)"] = hb_scaled
-                if "Hemoglobin level adjusted for altitude (g/dl - 1 decimal)" in row:
-                    row["Hemoglobin level adjusted for altitude (g/dl - 1 decimal)"] = hb_scaled
+                if COL_HB_SMOKE in row:
+                    row[COL_HB_SMOKE] = hb_scaled
+                if COL_HB_ALT in row:
+                    row[COL_HB_ALT] = hb_scaled
+                hb_set = True
         except (ValueError, TypeError):
             pass
+
+    # No hemoglobin given -> impute the training median so the ML model relies
+    # on demographics/symptoms instead of seeing a 0 g/dL "severe" signal.
+    if not hb_set:
+        if COL_HB_SMOKE in row:
+            row[COL_HB_SMOKE] = HB_MEDIAN_SMOKE
+        if COL_HB_ALT in row:
+            row[COL_HB_ALT] = HB_MEDIAN_ALT
 
     # ---------- CHILDREN'S QUESTIONS (map to fever/iron proxy if applicable) ----------
     # 'child_pale' or 'child_weak' or 'child_tired' implies child has been sick → use fever marker
@@ -306,11 +338,21 @@ def predict():
         # ============================================================
         # ML PREDICTION LAYER (used when no hemoglobin value)
         # ============================================================
-        mapped = map_frontend_to_model(data)
-        input_df = pd.DataFrame([mapped])[model_columns]
+        # No hemoglobin provided -> use the no-Hb model (honest confidence).
+        if model_nohb is not None and model_columns_nohb is not None:
+            active_model = model_nohb
+            active_cols = model_columns_nohb
+            method = "Machine Learning (XGBoost, no-Hb)"
+        else:
+            active_model = model
+            active_cols = model_columns
+            method = "Machine Learning (XGBoost + SMOTE)"
 
-        prediction = model.predict(input_df)
-        probabilities = model.predict_proba(input_df)
+        mapped = map_frontend_to_model(data, active_cols)
+        input_df = pd.DataFrame([mapped])[active_cols]
+
+        prediction = active_model.predict(input_df)
+        probabilities = active_model.predict_proba(input_df)
         confidence = float(probabilities[0][prediction[0]])
         predicted_label = label_encoder.inverse_transform(prediction)
 
@@ -321,7 +363,7 @@ def predict():
             "prediction_number": int(prediction[0]),
             "prediction_label": predicted_label[0],
             "confidence": confidence,
-            "method": "Machine Learning (XGBoost + SMOTE)"
+            "method": method
         })
 
     except Exception as e:

@@ -112,9 +112,9 @@ class _LoadingScreenState extends State<LoadingScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFFE53935),
-              Color(0xFFC62828),
-              Color(0xFFB71C1C),
+              Color(0xFFFB3B5E),
+              Color(0xFFE11D48),
+              Color(0xFF9F1239),
             ],
             stops: [0.0, 0.5, 1.0],
           ),
@@ -220,7 +220,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                                       child: Icon(
                                         Icons.biotech_outlined,
                                         size: 58,
-                                        color: Color(0xFFE53935),
+                                        color: Color(0xFFE11D48),
                                       ),
                                     ),
                                   ),
