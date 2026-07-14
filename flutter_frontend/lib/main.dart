@@ -27,6 +27,9 @@ import 'screens/assessment/questions/q_child_pale_screen.dart';
 import 'screens/assessment/questions/q_child_food_screen.dart';
 import 'screens/assessment/questions/q_men_tired_screen.dart';
 import 'screens/assessment/questions/q_men_dizzy_screen.dart';
+import 'screens/assessment/questions/q_fever_screen.dart';
+import 'screens/assessment/questions/q_iron_screen.dart';
+import 'screens/assessment/questions/q_breastfeed_screen.dart';
 import 'screens/assessment/questions/q_hemoglobin_screen.dart';
 import 'screens/assessment/submit_screen.dart';
 import 'screens/assessment/payment_screen.dart';
@@ -37,10 +40,11 @@ import 'screens/assessment/iron_foods_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/health_facilities_screen.dart';
+import 'screens/health_education_screen.dart';
 import 'screens/chat_screen.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
-import 'models/assessment_data.dart';
 import 'services/reminder_service.dart';
+import 'services/font_scale_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,6 +67,15 @@ class MyApp extends StatelessWidget {
         darkTheme: ThemeService.darkTheme,
         initialRoute: '/',
         routes: _routes(),
+        // App-wide adjustable text size (accessibility).
+        builder: (context, child) => ValueListenableBuilder<double>(
+          valueListenable: FontScaleService.instance,
+          builder: (context, scale, _) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(scale)),
+            child: child ?? const SizedBox.shrink(),
+          ),
+        ),
       ),
     );
   }
@@ -96,6 +109,9 @@ class MyApp extends StatelessWidget {
         '/q-child-food': (context) => const QChildFoodScreen(),
         '/q-men-tired': (context) => const QMenTiredScreen(),
         '/q-men-dizzy': (context) => const QMenDizzyScreen(),
+        '/q-fever': (context) => const QFeverScreen(),
+        '/q-iron': (context) => const QIronScreen(),
+        '/q-breastfeed': (context) => const QBreastfeedScreen(),
         '/q-hemoglobin': (context) => const QHemoglobinScreen(),
         '/submit': (context) => const SubmitScreen(),
         '/payment': (context) => const PaymentScreen(),
@@ -106,6 +122,7 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => const ProfileScreen(),
         '/history': (context) => const HistoryScreen(),
         '/health-facilities': (context) => const HealthFacilitiesScreen(),
+        '/education': (context) => const HealthEducationScreen(),
         '/chat': (context) => const ChatScreen(),
         '/admin': (context) => const AdminDashboardScreen(),
     };

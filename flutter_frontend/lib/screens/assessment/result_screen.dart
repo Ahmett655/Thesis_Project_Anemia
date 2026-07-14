@@ -8,6 +8,7 @@ import '../../services/pdf_report_service.dart';
 import '../../services/result_cache_service.dart';
 import '../../services/reminder_service.dart';
 import '../../services/theme_service.dart';
+import '../../theme/app_design.dart';
 import '../../widgets/home_button.dart';
 import '../../widgets/theme_toggle_button.dart';
 
@@ -23,6 +24,9 @@ class _ResultScreenState extends State<ResultScreen> {
   bool _isSpeaking = false;
   late _ResultConfig _config;
 
+  /// Previous cached result (same category) for the trend comparison card.
+  CachedResult? _previous;
+
   // Languages supported by the device (loaded at runtime).
   List<String> _availableLanguages = const [];
   String _selectedLang = 'so-SO';
@@ -33,10 +37,25 @@ class _ResultScreenState extends State<ResultScreen> {
     final int prediction = AssessmentData.predictionNumber;
     _config = _getConfig(prediction);
     _initTtsAndSpeak();
-    // Cache the result locally so it can be viewed again offline.
-    ResultCacheService.saveCurrentResult();
+    // Load the previous result (for the trend card) BEFORE overwriting the
+    // cache with the current one.
+    _loadPreviousThenCache();
     // Schedule a re-assessment reminder (30 days).
     ReminderService.scheduleReassessment(days: 30);
+  }
+
+  Future<void> _loadPreviousThenCache() async {
+    try {
+      final prev = await ResultCacheService.loadLastResult();
+      if (prev != null &&
+          prev.category == AssessmentData.category &&
+          AssessmentData.predictionNumber >= 0 &&
+          mounted) {
+        setState(() => _previous = prev);
+      }
+    } finally {
+      await ResultCacheService.saveCurrentResult();
+    }
   }
 
   /// Plain-text summary used for sharing via WhatsApp / SMS / etc.
@@ -357,22 +376,9 @@ class _ResultScreenState extends State<ResultScreen> {
                       padding: const EdgeInsets.symmetric(
                           vertical: 32, horizontal: 20),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            config.heroColor,
-                            config.heroColor.withOpacity(0.7),
-                          ],
-                        ),
+                        gradient: config.heroGradient,
                         borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: config.heroColor.withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
+                        boxShadow: AppDesign.glow(config.heroColor),
                       ),
                       child: Column(
                         children: [
@@ -459,8 +465,34 @@ class _ResultScreenState extends State<ResultScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
+                      // Emergency guidance (Severe results only)
+                      if (prediction == 2) ...[
+                        FadeSlideIn(
+                          delayMs: 80,
+                          child: _EmergencyCard(
+                            onFindClinic: () => Navigator.pushNamed(
+                                context, '/health-facilities'),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+
+                      // Trend vs previous assessment
+                      if (_previous != null) ...[
+                        FadeSlideIn(
+                          delayMs: 110,
+                          child: _TrendCard(
+                            previous: _previous!,
+                            current: prediction,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+
                       // Confidence card with progress bar
-                      _DetailCard(
+                      FadeSlideIn(
+                        delayMs: 150,
+                        child: _DetailCard(
                         title: 'Kalsoonida (Confidence)',
                         titleEng: 'How certain the system is',
                         child: Column(
@@ -515,19 +547,21 @@ class _ResultScreenState extends State<ResultScreen> {
                             ),
                           ],
                         ),
-                      ),
+                      )),
 
                       const SizedBox(height: 12),
 
                       // Method + Hemoglobin info row
-                      Row(
+                      FadeSlideIn(
+                        delayMs: 220,
+                        child: Row(
                         children: [
                           Expanded(
                             child: _MiniStat(
                               icon: Icons.science_outlined,
                               label: 'Habka',
                               value: _methodShort(method),
-                              valueColor: const Color(0xFF1565C0),
+                              valueColor: AppDesign.indigo,
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -539,28 +573,33 @@ class _ResultScreenState extends State<ResultScreen> {
                                   ? '${hbValue.toStringAsFixed(1)} g/dL'
                                   : 'Lama bixin',
                               valueColor: hbValue > 0
-                                  ? const Color(0xFFE53935)
-                                  : const Color(0xFF9E9E9E),
+                                  ? AppDesign.rose
+                                  : AppDesign.mist,
                             ),
                           ),
                         ],
-                      ),
+                      )),
 
                       const SizedBox(height: 12),
 
                       // Category info
-                      _MiniStat(
-                        icon: Icons.person_outline,
-                        label: 'Qaybta',
-                        value: _categoryLabel(category),
-                        valueColor: const Color(0xFF6A1B9A),
-                        fullWidth: true,
+                      FadeSlideIn(
+                        delayMs: 280,
+                        child: _MiniStat(
+                          icon: Icons.person_outline,
+                          label: 'Qaybta',
+                          value: _categoryLabel(category),
+                          valueColor: AppDesign.teal,
+                          fullWidth: true,
+                        ),
                       ),
 
                       const SizedBox(height: 16),
 
                       // Detailed explanation card
-                      _DetailCard(
+                      FadeSlideIn(
+                        delayMs: 340,
+                        child: _DetailCard(
                         title: 'Sharaxaad',
                         titleEng: 'Explanation',
                         child: Column(
@@ -623,7 +662,7 @@ class _ResultScreenState extends State<ResultScreen> {
                             ),
                           ],
                         ),
-                      ),
+                      )),
 
                       const SizedBox(height: 12),
 
@@ -641,12 +680,11 @@ class _ResultScreenState extends State<ResultScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1565C0)
-                                      .withOpacity(0.1),
+                                  color: AppDesign.indigo.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(Icons.public,
-                                    color: Color(0xFF1565C0), size: 22),
+                                    color: AppDesign.indigo, size: 22),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -667,7 +705,7 @@ class _ResultScreenState extends State<ResultScreen> {
                                       'Qiimayntan waxay raacaysaa heerarka caalamiga ah ee WHO ee qiimeynta anemia.',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Color(0xFF455A64),
+                                        color: AppDesign.slate,
                                         height: 1.4,
                                       ),
                                     ),
@@ -681,40 +719,49 @@ class _ResultScreenState extends State<ResultScreen> {
                       const SizedBox(height: 24),
 
                       // Action buttons
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
+                      FadeSlideIn(
+                        delayMs: 420,
+                        child: Pressable(
+                          onTap: () {
                             Navigator.pushNamed(context, '/recommendations');
                           },
-                          icon: const Icon(Icons.tips_and_updates_outlined,
-                              size: 20),
-                          label: const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Eeg Talooyinka',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                          child: Container(
+                            width: double.infinity,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              gradient: config.heroGradient,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: AppDesign.glow(config.heroColor,
+                                  opacity: 0.3),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.tips_and_updates_outlined,
+                                    color: Colors.white, size: 20),
+                                SizedBox(width: 10),
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Eeg Talooyinka',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    Text(
+                                      'View Recommendations',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w400,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              Text(
-                                'View Recommendations',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                            ],
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: config.heroColor,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              ],
                             ),
                           ),
                         ),
@@ -741,10 +788,9 @@ class _ResultScreenState extends State<ResultScreen> {
                                   ),
                                 ),
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor:
-                                      const Color(0xFFE53935),
+                                  foregroundColor: AppDesign.rose,
                                   side: const BorderSide(
-                                      color: Color(0xFFE53935),
+                                      color: AppDesign.rose,
                                       width: 1.2),
                                   shape: RoundedRectangleBorder(
                                     borderRadius:
@@ -770,10 +816,9 @@ class _ResultScreenState extends State<ResultScreen> {
                                   ),
                                 ),
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor:
-                                      const Color(0xFF1565C0),
+                                  foregroundColor: AppDesign.indigo,
                                   side: const BorderSide(
-                                      color: Color(0xFF1565C0),
+                                      color: AppDesign.indigo,
                                       width: 1.2),
                                   shape: RoundedRectangleBorder(
                                     borderRadius:
@@ -809,7 +854,7 @@ class _ResultScreenState extends State<ResultScreen> {
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF455A64),
+                            foregroundColor: AppDesign.slate,
                             side: BorderSide(color: Colors.grey.shade300),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -865,7 +910,9 @@ class _ResultScreenState extends State<ResultScreen> {
     if (factors.isEmpty) return const SizedBox.shrink();
     return Column(
       children: [
-        _DetailCard(
+        FadeSlideIn(
+          delayMs: 380,
+          child: _DetailCard(
           title: 'Sababaha saamaynta lahaa',
           titleEng: 'What influenced this result',
           child: Column(
@@ -940,7 +987,7 @@ class _ResultScreenState extends State<ResultScreen> {
               ),
             ],
           ),
-        ),
+        )),
         const SizedBox(height: 12),
       ],
     );
@@ -970,7 +1017,8 @@ class _ResultScreenState extends State<ResultScreen> {
     switch (prediction) {
       case 0: // Mild / Low Risk
         return _ResultConfig(
-          heroColor: const Color(0xFF26A69A),
+          heroColor: AppDesign.emerald,
+          heroGradient: AppDesign.emeraldGradient,
           icon: Icons.sentiment_satisfied_alt,
           riskLabelSomali: 'Khatar Hooseyso',
           riskLabelEnglish: 'Low Risk',
@@ -983,7 +1031,12 @@ class _ResultScreenState extends State<ResultScreen> {
         );
       case 1: // Moderate
         return _ResultConfig(
-          heroColor: const Color(0xFFFFA726),
+          heroColor: AppDesign.amber,
+          heroGradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFFBBF24), Color(0xFFD97706)],
+          ),
           icon: Icons.warning_amber_rounded,
           riskLabelSomali: 'Khatar Dhex Dhexaad',
           riskLabelEnglish: 'Moderate Risk',
@@ -997,7 +1050,8 @@ class _ResultScreenState extends State<ResultScreen> {
         );
       case 2: // Severe
         return _ResultConfig(
-          heroColor: const Color(0xFFE53935),
+          heroColor: AppDesign.rose,
+          heroGradient: AppDesign.brandGradient,
           icon: Icons.priority_high,
           riskLabelSomali: 'Khatar Sare',
           riskLabelEnglish: 'High Risk',
@@ -1011,7 +1065,12 @@ class _ResultScreenState extends State<ResultScreen> {
         );
       default: // Error / Unknown
         return _ResultConfig(
-          heroColor: const Color(0xFF9E9E9E),
+          heroColor: AppDesign.mist,
+          heroGradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFB6C0CE), Color(0xFF94A3B8)],
+          ),
           icon: Icons.help_outline,
           riskLabelSomali: 'Cilad Soo Gashay',
           riskLabelEnglish: 'Error',
@@ -1028,6 +1087,7 @@ class _ResultScreenState extends State<ResultScreen> {
 
 class _ResultConfig {
   final Color heroColor;
+  final Gradient heroGradient;
   final IconData icon;
   final String riskLabelSomali;
   final String riskLabelEnglish;
@@ -1038,6 +1098,7 @@ class _ResultConfig {
 
   _ResultConfig({
     required this.heroColor,
+    required this.heroGradient,
     required this.icon,
     required this.riskLabelSomali,
     required this.riskLabelEnglish,
@@ -1046,6 +1107,242 @@ class _ResultConfig {
     required this.meaningSomali,
     required this.meaningEnglish,
   });
+}
+
+/// Red "what to do now" card shown only for Severe results, with a button
+/// that opens the nearby health facilities map.
+class _EmergencyCard extends StatelessWidget {
+  final VoidCallback onFindClinic;
+  const _EmergencyCard({required this.onFindClinic});
+
+  static const List<String> _steps = [
+    'Si degdeg ah ula xiriir xarun caafimaad ama dhakhtar.',
+    'Qaado natiijadan (PDF) oo tus dhakhtarka.',
+    'Ha sugin — anemia daran waxay u baahan tahay baadhitaan dhiig iyo daawayn dhakhso ah.',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppDesign.rose.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppDesign.rose.withOpacity(0.35), width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: AppDesign.brandGradient,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.emergency_outlined,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tallaabooyinka Degdegga ah',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: context.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'What to do now',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontStyle: FontStyle.italic,
+                        color: context.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          for (int i = 0; i < _steps.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: AppDesign.rose,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${i + 1}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _steps[i],
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.textSecondary,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 6),
+          Pressable(
+            onTap: onFindClinic,
+            child: Container(
+              width: double.infinity,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: AppDesign.brandGradient,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: AppDesign.glow(AppDesign.rose, opacity: 0.25),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.local_hospital_outlined,
+                      color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Raadi Xarun Caafimaad oo Kuu Dhow',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compares the previous cached result with the current one.
+class _TrendCard extends StatelessWidget {
+  final CachedResult previous;
+  final int current;
+  const _TrendCard({required this.previous, required this.current});
+
+  static String _labelSo(int p) {
+    switch (p) {
+      case 0:
+        return 'Khatar Hooseysa';
+      case 1:
+        return 'Khatar Dhexdhexaad';
+      case 2:
+        return 'Khatar Sare';
+      default:
+        return '—';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final prev = previous.predictionNumber;
+    final bool improved = current < prev;
+    final bool worse = current > prev;
+    final Color color = improved
+        ? AppDesign.emerald
+        : worse
+            ? AppDesign.rose
+            : AppDesign.indigo;
+    final IconData icon = improved
+        ? Icons.trending_down_rounded
+        : worse
+            ? Icons.trending_up_rounded
+            : Icons.trending_flat_rounded;
+    final String verdict = improved
+        ? 'Waad hagaagtay — khatartu way hoos u dhacday ✅'
+        : worse
+            ? 'Khatartu way kordhay — la tasho dhakhtar ⚠'
+            : 'Isbeddel ma jiro — sidii hore ayaad tahay';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.25)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Isbarbardhig: qiimeyntii hore',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: context.textMuted,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${_labelSo(prev)}  →  ${_labelSo(current)}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: context.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  verdict,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _IconButton extends StatelessWidget {

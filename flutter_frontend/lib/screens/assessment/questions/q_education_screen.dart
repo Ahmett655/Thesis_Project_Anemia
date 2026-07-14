@@ -12,6 +12,11 @@ class QEducationScreen extends StatefulWidget {
 class _QEducationScreenState extends State<QEducationScreen> {
   String _selected = '';
 
+  // For the children category the respondent is the mother/caregiver, so we
+  // ask about HER education (this is also what the training data records) —
+  // a 1–6 year old child cannot have a university degree.
+  bool get _isChild => AssessmentData.category == 'children';
+
   final List<OptionItem> _options = const [
     OptionItem(value: 'no_education', label: 'Waxbarasho ma lihi', icon: Icons.do_disturb_alt_outlined),
     OptionItem(value: 'primary',      label: 'Dugsi hoose',         icon: Icons.menu_book_outlined),
@@ -24,8 +29,12 @@ class _QEducationScreenState extends State<QEducationScreen> {
   Widget build(BuildContext context) {
     return QuestionWidget(
       theme: QuestionTheme.education(),
-      somalTitle: 'Heerka waxbarashadaadu\nwaa kee?',
-      englishTitle: '(What is your level of education?)',
+      somalTitle: _isChild
+          ? 'Heerka waxbarasho ee hooyada\n(ama masuulka) cunuggu waa kee?'
+          : 'Heerka waxbarashadaadu\nwaa kee?',
+      englishTitle: _isChild
+          ? '(What is the education level of the child\'s mother/caregiver?)'
+          : '(What is your level of education?)',
       illustration: const Icon(
         Icons.school_outlined,
         color: Color(0xFF5E35B1),

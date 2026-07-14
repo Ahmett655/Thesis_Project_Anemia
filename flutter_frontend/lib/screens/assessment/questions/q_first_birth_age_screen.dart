@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../models/assessment_data.dart';
 import '../../../services/theme_service.dart';
 import 'question_widget.dart' show QuestionTheme;
@@ -20,9 +21,25 @@ class _QFirstBirthAgeScreenState extends State<QFirstBirthAgeScreen> {
     super.dispose();
   }
 
+  static const int _minAge = 10;
+  static const int _maxAge = 60;
+
+  /// Error text shown under the input while the value is invalid.
+  String? get _ageError {
+    final txt = _ageController.text.trim();
+    if (txt.isEmpty) return null;
+    final v = int.tryParse(txt);
+    if (v == null) return 'Fadlan geli nambar sax ah (tusaale: 18).';
+    if (v < _minAge || v > _maxAge) {
+      return 'Da\'du waa inay u dhexeysaa $_minAge – $_maxAge sano. '
+          'Hubi oo sax da\'da.';
+    }
+    return null;
+  }
+
   bool get _canProceed {
     final v = int.tryParse(_ageController.text.trim());
-    return v != null && v >= 10 && v <= 60;
+    return v != null && v >= _minAge && v <= _maxAge;
   }
 
   @override
@@ -57,6 +74,10 @@ class _QFirstBirthAgeScreenState extends State<QFirstBirthAgeScreen> {
         TextField(
           controller: _ageController,
           keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(2),
+          ],
           onChanged: (_) => setState(() {}),
           style: TextStyle(
             color: context.textPrimary,
@@ -65,6 +86,13 @@ class _QFirstBirthAgeScreenState extends State<QFirstBirthAgeScreen> {
           ),
           decoration: InputDecoration(
             hintText: 'Tusaale: 18',
+            errorText: _ageError,
+            errorMaxLines: 3,
+            errorStyle: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+            ),
             hintStyle: TextStyle(color: context.textMuted, fontSize: 14),
             prefixIcon: Icon(Icons.calendar_today_outlined,
                 color: theme.accentColor, size: 20),

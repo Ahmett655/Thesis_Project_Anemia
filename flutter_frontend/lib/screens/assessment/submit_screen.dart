@@ -68,25 +68,17 @@ class _SubmitScreenState extends State<SubmitScreen>
   }
 
   void _onSubmit() {
-    // Decide payment from the wealth question already answered:
-    // "poor" -> free (skip payment); "moderate"/"good" -> pay via WaafiPay.
-    final wealth = (AssessmentData.answers['wealth'] ?? '').toString();
-
-    if (wealth == 'poor') {
-      AssessmentData.saveAnswer('payment_status', 'waived_poor');
-      TopMessageBanner.info(
-        context,
-        'Falanqayn dhammaan jawaabahaaga...',
-        title: 'Submit la sameeyay!',
-      );
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted) Navigator.pushNamed(context, '/loading');
-      });
-    } else {
-      // Moderate / Good (or unspecified) -> require payment first.
-      AssessmentData.saveAnswer('payment_status', 'paid');
-      Navigator.pushNamed(context, '/payment');
-    }
+    // The system targets low-resource communities, so the assessment is
+    // FREE for everyone — no payment gate.
+    AssessmentData.saveAnswer('payment_status', 'free');
+    TopMessageBanner.info(
+      context,
+      'Falanqayn dhammaan jawaabahaaga...',
+      title: 'Submit la sameeyay!',
+    );
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) Navigator.pushNamed(context, '/loading');
+    });
   }
 
   @override

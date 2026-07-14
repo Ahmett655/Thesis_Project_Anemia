@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../../models/assessment_data.dart';
 import '../../services/assessment_service.dart';
 import '../../services/api_config.dart';
+import '../../services/offline_who_service.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -80,25 +81,50 @@ class _LoadingScreenState extends State<LoadingScreen>
             (hb is num) ? hb.toDouble() : 0.0;
       } else {
         debugPrint('[Loading] API failed with status ${response.statusCode}');
+        if (!_applyOfflineWhoFallback()) {
+          AssessmentData.predictionNumber = -1;
+          AssessmentData.predictionLabel = 'Error';
+          AssessmentData.confidence = 0.0;
+          AssessmentData.method = '';
+          AssessmentData.hemoglobinValue = 0.0;
+        }
+      }
+    } catch (e, st) {
+      debugPrint('[Loading] Exception: $e');
+      debugPrint('[Loading] Stack: $st');
+      if (!_applyOfflineWhoFallback()) {
         AssessmentData.predictionNumber = -1;
         AssessmentData.predictionLabel = 'Error';
         AssessmentData.confidence = 0.0;
         AssessmentData.method = '';
         AssessmentData.hemoglobinValue = 0.0;
       }
-    } catch (e, st) {
-      debugPrint('[Loading] Exception: $e');
-      debugPrint('[Loading] Stack: $st');
-      AssessmentData.predictionNumber = -1;
-      AssessmentData.predictionLabel = 'Error';
-      AssessmentData.confidence = 0.0;
-      AssessmentData.method = '';
-      AssessmentData.hemoglobinValue = 0.0;
     }
 
     if (mounted) {
       Navigator.pushReplacementNamed(context, '/result');
     }
+  }
+
+  /// When the server cannot be reached but the user provided a hemoglobin
+  /// value, classify locally with WHO thresholds so the result still works
+  /// offline. Returns false when hemoglobin was not provided.
+  bool _applyOfflineWhoFallback() {
+    final hasTest =
+        (AssessmentData.answers['has_hemoglobin_test'] ?? '').toString() ==
+            'yes';
+    final hb = double.tryParse(
+        (AssessmentData.answers['hemoglobin_value'] ?? '').toString());
+    if (!hasTest || hb == null || hb <= 0) return false;
+
+    final r = OfflineWhoService.classify(hb, AssessmentData.category);
+    AssessmentData.predictionNumber = r.predictionNumber;
+    AssessmentData.predictionLabel = r.label;
+    AssessmentData.confidence = r.confidence * 100;
+    AssessmentData.method = 'WHO Clinical Thresholds (Offline)';
+    AssessmentData.hemoglobinValue = hb;
+    debugPrint('[Loading] Offline WHO fallback used: ${r.label}');
+    return true;
   }
 
   @override

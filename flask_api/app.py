@@ -181,30 +181,62 @@ def map_frontend_to_model(data: dict, columns=None) -> dict:
         if COL_HB_ALT in row:
             row[COL_HB_ALT] = HB_MEDIAN_ALT
 
-    # ---------- CHILDREN'S QUESTIONS (map to fever/iron proxy if applicable) ----------
-    # 'child_pale' or 'child_weak' or 'child_tired' implies child has been sick → use fever marker
+    # ---------- DIRECT MODEL QUESTIONS (asked in the app questionnaire) ----------
+    # These three training-data features are now asked directly in the app.
+    # A direct answer takes priority over the older symptom-based proxies.
+    fever_ans = (data.get("fever") or "").strip().lower()
+    fever_answered = fever_ans in ("yes", "no")
+    if fever_answered:
+        col = ("Had fever in last two weeks_Yes" if fever_ans == "yes"
+               else "Had fever in last two weeks_No")
+        if col in row:
+            row[col] = 1
+
+    iron_ans = (data.get("iron_supplement") or "").strip().lower()
+    iron_answered = iron_ans in ("yes", "no")
+    if iron_answered:
+        col = ("Taking iron pills, sprinkles or syrup_Yes" if iron_ans == "yes"
+               else "Taking iron pills, sprinkles or syrup_No")
+        if col in row:
+            row[col] = 1
+
+    # When child put to breast (children category only)
+    bf_ans = (data.get("breastfeed_start") or "").strip().lower()
+    bf_col = {
+        "immediately": "When child put to breast_Immediately",
+        "hours": "When child put to breast_Hours: 1",
+        "days": "When child put to breast_Days: 1",
+    }.get(bf_ans)
+    if bf_col and bf_col in row:
+        row[bf_col] = 1
+
+    # ---------- CHILDREN'S QUESTIONS (fever/iron proxies — used only when the
+    # direct questions above were not answered, e.g. old app versions) ----------
     if category == "children":
-        anyone_sick = any(
-            (data.get(k) or "").strip().lower() == "yes"
-            for k in ["child_pale", "child_weak_dizzy", "child_tired"]
-        )
-        if anyone_sick:
-            if "Had fever in last two weeks_Yes" in row:
-                row["Had fever in last two weeks_Yes"] = 1
-        else:
-            if "Had fever in last two weeks_No" in row:
-                row["Had fever in last two weeks_No"] = 1
+        if not fever_answered:
+            # 'child_pale'/'child_weak'/'child_tired' imply the child was sick
+            anyone_sick = any(
+                (data.get(k) or "").strip().lower() == "yes"
+                for k in ["child_pale", "child_weak_dizzy", "child_tired"]
+            )
+            if anyone_sick:
+                if "Had fever in last two weeks_Yes" in row:
+                    row["Had fever in last two weeks_Yes"] = 1
+            else:
+                if "Had fever in last two weeks_No" in row:
+                    row["Had fever in last two weeks_No"] = 1
 
         # child_good_food → taking iron supplements proxy
-        good_food = (data.get("child_good_food") or "").strip().lower()
-        if good_food == "yes":
-            col = "Taking iron pills, sprinkles or syrup_Yes"
-        elif good_food == "no":
-            col = "Taking iron pills, sprinkles or syrup_No"
-        else:
-            col = None
-        if col and col in row:
-            row[col] = 1
+        if not iron_answered:
+            good_food = (data.get("child_good_food") or "").strip().lower()
+            if good_food == "yes":
+                col = "Taking iron pills, sprinkles or syrup_Yes"
+            elif good_food == "no":
+                col = "Taking iron pills, sprinkles or syrup_No"
+            else:
+                col = None
+            if col and col in row:
+                row[col] = 1
 
         # Source file marker for children
         if "source_file_children anemia.csv" in row:
@@ -220,7 +252,8 @@ def map_frontend_to_model(data: dict, columns=None) -> dict:
     fatigue_yes = (data.get("fatigue") or "").strip().lower() == "yes"
     dizziness_yes = (data.get("dizziness") or "").strip().lower() == "yes"
     symptoms_yes = fatigue_yes or dizziness_yes
-    if symptoms_yes:
+    # Proxy only — never override a DIRECT fever answer from the app.
+    if symptoms_yes and not fever_answered:
         # Only override if not already set (e.g., from child weak/pale check)
         if (row.get("Had fever in last two weeks_Yes", 0) == 0
                 and row.get("Had fever in last two weeks_No", 0) == 0):

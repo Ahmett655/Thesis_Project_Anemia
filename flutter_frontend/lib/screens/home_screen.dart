@@ -6,6 +6,7 @@ import '../services/result_cache_service.dart';
 import '../services/reminder_service.dart';
 import '../theme/app_design.dart';
 import '../widgets/theme_toggle_button.dart';
+import '../widgets/font_scale_button.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -101,6 +102,19 @@ class _HomeScreenState extends State<HomeScreen>
                         Navigator.pushNamed(context, '/health-facilities'),
                   ),
                 ),
+                const SizedBox(height: 12),
+
+                // Health education (offline, free)
+                FadeSlideIn(
+                  delayMs: 470,
+                  child: _outlineAction(
+                    context,
+                    icon: Icons.menu_book_outlined,
+                    label: 'Barashada Anemia (Health Education)',
+                    color: AppDesign.indigo,
+                    onTap: () => Navigator.pushNamed(context, '/education'),
+                  ),
+                ),
                 const SizedBox(height: 14),
 
                 if (!isLoggedIn)
@@ -192,6 +206,8 @@ class _HomeScreenState extends State<HomeScreen>
                                 Navigator.pushNamed(context, '/profile')),
                         const SizedBox(width: 10),
                       ],
+                      const FontScaleButton(onDarkBg: true),
+                      const SizedBox(width: 10),
                       const ThemeToggleButton(onDarkBg: true),
                     ],
                   ),

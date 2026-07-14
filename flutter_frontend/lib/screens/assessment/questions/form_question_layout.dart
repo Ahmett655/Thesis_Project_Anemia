@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../services/theme_service.dart';
 import '../../../widgets/home_button.dart';
 import 'question_widget.dart' show QuestionTheme;
+import 'question_header_tools.dart';
 
 /// Same beautiful gradient header as QuestionWidget, but the body is a
 /// custom form (text fields, etc.) instead of a fixed options list.
@@ -84,6 +85,9 @@ class FormQuestionLayout extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             const HomeButton(onDarkBg: true),
+                            const SizedBox(width: 8),
+                            SpeakQuestionButton(
+                                text: somalTitle.replaceAll('\n', ' ')),
                             const Spacer(),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -115,7 +119,9 @@ class FormQuestionLayout extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
+                        const QuestionProgressBar(),
+                        const SizedBox(height: 14),
                         Container(
                           width: 110,
                           height: 110,

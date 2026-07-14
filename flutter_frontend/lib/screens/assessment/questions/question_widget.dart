@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../services/theme_service.dart';
 import '../../../widgets/home_button.dart';
+import 'question_header_tools.dart';
 
 /// Reusable widget for all Yes/No and multi-choice questions.
 /// Now supports per-question theming via [QuestionTheme].
@@ -30,6 +31,11 @@ class QuestionWidget extends StatelessWidget {
     required this.onBack,
     this.theme,
   });
+
+  /// Text spoken by the read-aloud button: title + all options.
+  String get _speakText =>
+      '${somalTitle.replaceAll('\n', ' ')}. Doorashooyinka: '
+      '${options.map((o) => o.label).join('. ')}';
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +100,8 @@ class QuestionWidget extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             const HomeButton(onDarkBg: true),
+                            const SizedBox(width: 8),
+                            SpeakQuestionButton(text: _speakText),
                             const Spacer(),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -125,7 +133,9 @@ class QuestionWidget extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
+                        const QuestionProgressBar(),
+                        const SizedBox(height: 14),
                         // Illustration inside soft circle
                         Container(
                           width: 110,

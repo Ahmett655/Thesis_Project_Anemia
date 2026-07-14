@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../models/assessment_data.dart';
 import '../../../services/theme_service.dart';
 import 'question_widget.dart' show QuestionTheme;
@@ -25,11 +26,57 @@ class _QHemoglobinScreenState extends State<QHemoglobinScreen> {
     setState(() => _hasTest = value);
   }
 
+  // Clinically plausible hemoglobin range that may be ENTERED, per category.
+  // Values outside this range are almost certainly typing mistakes.
+  double get _minHb => 3.0;
+
+  double get _maxHb {
+    switch (AssessmentData.category) {
+      case 'men':
+        return 20.0;
+      case 'women':
+        return 18.0;
+      case 'children':
+        return 17.0;
+      default:
+        return 20.0;
+    }
+  }
+
+  String get _categoryName {
+    switch (AssessmentData.category) {
+      case 'men':
+        return 'ragga';
+      case 'women':
+        return 'haweenka';
+      case 'children':
+        return 'carruurta';
+      default:
+        return '';
+    }
+  }
+
+  /// Error text shown under the input while the value is invalid.
+  String? get _hbError {
+    final txt = _hbController.text.trim();
+    if (txt.isEmpty) return null;
+    final v = double.tryParse(txt);
+    if (v == null) {
+      return 'Fadlan geli nambar sax ah (tusaale: 12.5).';
+    }
+    if (v < _minHb || v > _maxHb) {
+      return 'Qiimaha hemoglobin ee ${_categoryName.isEmpty ? 'la aqbali karo' : _categoryName} '
+          'waa inuu u dhexeeyaa ${_minHb.toStringAsFixed(0)} – ${_maxHb.toStringAsFixed(0)} g/dL. '
+          'Hubi baadhitaankaaga oo sax qiimaha.';
+    }
+    return null;
+  }
+
   bool get _canProceed {
     if (_hasTest == 'no') return true;
     if (_hasTest == 'yes') {
       final v = double.tryParse(_hbController.text.trim());
-      return v != null && v > 0 && v < 25;
+      return v != null && v >= _minHb && v <= _maxHb;
     }
     return false;
   }
@@ -107,6 +154,11 @@ class _QHemoglobinScreenState extends State<QHemoglobinScreen> {
             controller: _hbController,
             keyboardType:
                 const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              // Digits and decimal point only; length-capped (e.g. 12.5).
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+              LengthLimitingTextInputFormatter(4),
+            ],
             onChanged: (_) => setState(() {}),
             style: TextStyle(
               color: context.textPrimary,
@@ -115,6 +167,13 @@ class _QHemoglobinScreenState extends State<QHemoglobinScreen> {
             ),
             decoration: InputDecoration(
               hintText: 'Tusaale: 12.5',
+              errorText: _hbError,
+              errorMaxLines: 3,
+              errorStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+              ),
               hintStyle:
                   TextStyle(color: context.textMuted, fontSize: 14),
               prefixIcon: Icon(Icons.opacity,
@@ -148,16 +207,17 @@ class _QHemoglobinScreenState extends State<QHemoglobinScreen> {
               border: Border.all(
                   color: const Color(0xFFFFD54F).withOpacity(0.5)),
             ),
-            child: const Row(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.info_outline,
+                const Icon(Icons.info_outline,
                     size: 18, color: Color(0xFFFF8F00)),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Qiimaha caadiga ah: 12–16 g/dL (haweenka), 13–17 g/dL (ragga), 11–15 g/dL (carruurta).',
-                    style: TextStyle(
+                    'Xadka la geli karo (${_categoryName.isEmpty ? 'guud' : _categoryName}): '
+                    '${_minHb.toStringAsFixed(0)} – ${_maxHb.toStringAsFixed(0)} g/dL.',
+                    style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFF7C5800),
                       height: 1.5,
