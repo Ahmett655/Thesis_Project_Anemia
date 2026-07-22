@@ -21,8 +21,10 @@ class _QFirstBirthAgeScreenState extends State<QFirstBirthAgeScreen> {
     super.dispose();
   }
 
-  static const int _minAge = 10;
-  static const int _maxAge = 60;
+  // Biologically plausible age for a woman's FIRST birth: 15 (youngest
+  // realistic) to 50 (around menopause; training data max was 48).
+  static const int _minAge = 15;
+  static const int _maxAge = 50;
 
   /// Error text shown under the input while the value is invalid.
   String? get _ageError {
@@ -131,10 +133,10 @@ class _QFirstBirthAgeScreenState extends State<QFirstBirthAgeScreen> {
               Icon(Icons.info_outline,
                   size: 18, color: theme.accentColor),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Da\'du waxay u dhexeysaa 10 ilaa 60 sano.',
-                  style: TextStyle(
+                  'Da\'du waxay u dhexeysaa $_minAge ilaa $_maxAge sano.',
+                  style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFF455A64),
                       height: 1.5),
