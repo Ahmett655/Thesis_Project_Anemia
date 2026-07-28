@@ -41,7 +41,6 @@ import 'screens/profile_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/health_facilities_screen.dart';
 import 'screens/health_education_screen.dart';
-import 'screens/chat_screen.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
 import 'services/reminder_service.dart';
 import 'services/font_scale_service.dart';
@@ -123,7 +122,6 @@ class MyApp extends StatelessWidget {
         '/history': (context) => const HistoryScreen(),
         '/health-facilities': (context) => const HealthFacilitiesScreen(),
         '/education': (context) => const HealthEducationScreen(),
-        '/chat': (context) => const ChatScreen(),
         '/admin': (context) => const AdminDashboardScreen(),
     };
   }

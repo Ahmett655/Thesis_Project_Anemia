@@ -35,32 +35,6 @@ class _HomeScreenState extends State<HomeScreen>
 
     return Scaffold(
       backgroundColor: context.bgPage,
-      floatingActionButton: FadeSlideIn(
-        delayMs: 700,
-        child: Pressable(
-          onTap: () => Navigator.pushNamed(context, '/chat'),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            decoration: BoxDecoration(
-              gradient: AppDesign.indigoGradient,
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: AppDesign.glow(AppDesign.indigo, opacity: 0.4),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.auto_awesome, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Text('Caawiye AI',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 14)),
-              ],
-            ),
-          ),
-        ),
-      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
