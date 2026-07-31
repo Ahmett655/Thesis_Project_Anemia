@@ -6,9 +6,11 @@ import pandas as pd
 app = Flask(__name__)
 CORS(app)
 
-model = joblib.load("anemia_model.pkl")
-label_encoder = joblib.load("label_encoder.pkl")
-model_columns = joblib.load("model_columns.pkl")
+# Full model — retrained via the supervisor-required 13-step pipeline notebook
+# (Anemia_ML_Pipeline_13Steps.ipynb). Tuned XGBoost fitted on SMOTE-balanced data.
+model = joblib.load("final_model_pipeline.pkl")
+label_encoder = joblib.load("final_label_encoder.pkl")
+model_columns = joblib.load("final_model_columns.pkl")
 
 # Separate model trained WITHOUT hemoglobin, used when the user provides no
 # lab value — gives honest (lower) confidence instead of a misleading ~99%
@@ -137,12 +139,25 @@ def map_frontend_to_model(data: dict, columns=None) -> dict:
         pass
 
     # ---------- AGE AT 1ST BIRTH ----------
+    first_birth_age = 0
     try:
         first_birth_age = int(data.get("first_birth_age") or 0)
         if "Age of respondent at 1st birth" in row:
             row["Age of respondent at 1st birth"] = first_birth_age
     except (ValueError, TypeError):
         pass
+
+    # ---------- ENGINEERED FEATURES (13-step pipeline model) ----------
+    # young_mother = 1 if first birth before age 18; high_parity = 1 if >=3 births.
+    # These columns only exist in the new (final) model; harmlessly ignored otherwise.
+    try:
+        births_val = int(data.get("births_last_5_years") or 0)
+    except (ValueError, TypeError):
+        births_val = 0
+    if "young_mother" in row:
+        row["young_mother"] = 1 if (0 < first_birth_age < 18) else 0
+    if "high_parity" in row:
+        row["high_parity"] = 1 if births_val >= 3 else 0
 
     # ---------- HEMOGLOBIN LEVEL ----------
     # Frontend sends: has_hemoglobin_test ('yes'/'no'), hemoglobin_value (e.g., '12.5' g/dL)
