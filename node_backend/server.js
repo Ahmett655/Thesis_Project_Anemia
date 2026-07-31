@@ -8,6 +8,7 @@ const authRoutes = require("./src/routes/authRoutes");
 const adminRoutes = require("./src/routes/adminRoutes");
 const paymentRoutes = require("./src/routes/paymentRoutes");
 const chatRoutes = require("./src/routes/chatRoutes");
+const bookingRoutes = require("./src/routes/bookingRoutes");
 const User = require("./src/models/User");
 
 const app = express();
@@ -54,6 +55,7 @@ app.use("/api/predict", predictRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/booking", bookingRoutes);
 
 app.listen(3000, () => {
   console.log("Server running on http://localhost:3000");

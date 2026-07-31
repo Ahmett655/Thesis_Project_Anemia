@@ -489,6 +489,18 @@ class _ResultScreenState extends State<ResultScreen> {
                         const SizedBox(height: 12),
                       ],
 
+                      // Hospital booking (Moderate or Severe results)
+                      if (prediction == 1 || prediction == 2) ...[
+                        FadeSlideIn(
+                          delayMs: 130,
+                          child: _BookingCard(
+                            onBook: () =>
+                                Navigator.pushNamed(context, '/booking'),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+
                       // Confidence card with progress bar
                       FadeSlideIn(
                         delayMs: 150,
@@ -1107,6 +1119,96 @@ class _ResultConfig {
     required this.meaningSomali,
     required this.meaningEnglish,
   });
+}
+
+/// Prompts the user (Moderate/Severe) to book a hospital appointment.
+class _BookingCard extends StatelessWidget {
+  final VoidCallback onBook;
+  const _BookingCard({required this.onBook});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppDesign.indigo.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppDesign.indigo.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: AppDesign.indigoGradient,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.event_available_outlined,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Ballan Hospital ka qabso',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: context.textPrimary,
+                        )),
+                    Text('Book a hospital appointment',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          color: context.textMuted,
+                        )),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Dooro hospital kuu dhow, ballan qabso oo hel rasiid — dhakhtar '
+            'la tasho si degdeg ah.',
+            style: TextStyle(
+                fontSize: 13, color: context.textSecondary, height: 1.5),
+          ),
+          const SizedBox(height: 12),
+          Pressable(
+            onTap: onBook,
+            child: Container(
+              width: double.infinity,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: AppDesign.indigoGradient,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: AppDesign.glow(AppDesign.indigo, opacity: 0.25),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.calendar_month_outlined,
+                      color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text('Ballan Qabso',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Red "what to do now" card shown only for Severe results, with a button
