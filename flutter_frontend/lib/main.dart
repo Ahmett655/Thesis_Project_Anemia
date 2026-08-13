@@ -43,6 +43,7 @@ import 'screens/health_facilities_screen.dart';
 import 'screens/health_education_screen.dart';
 import 'screens/booking/booking_screen.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
+import 'screens/admin/admin_reports_screen.dart';
 import 'services/reminder_service.dart';
 import 'services/font_scale_service.dart';
 
@@ -125,6 +126,7 @@ class MyApp extends StatelessWidget {
         '/education': (context) => const HealthEducationScreen(),
         '/booking': (context) => const BookingScreen(),
         '/admin': (context) => const AdminDashboardScreen(),
+        '/admin-reports': (context) => const AdminReportsScreen(),
     };
   }
 }

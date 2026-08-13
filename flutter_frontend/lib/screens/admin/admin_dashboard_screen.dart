@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../services/admin_service.dart';
 import '../../services/theme_service.dart';
+import '../../theme/app_design.dart';
 import '../../widgets/home_button.dart';
 import '../../widgets/theme_toggle_button.dart';
 import 'admin_assessments_screen.dart';
@@ -122,8 +123,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                 _riskPieCard(_stats!),
                                 const SizedBox(height: 16),
                                 _categoryBarCard(_stats!),
-                                const SizedBox(height: 20),
+                                const SizedBox(height: 16),
                               ],
+                              _reportsButton(context),
+                              const SizedBox(height: 20),
                               Text(
                                 'Users (${_users.length})',
                                 key: _usersSectionKey,
@@ -146,6 +149,51 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
     );
   }
+
+  /// Entry point to the daily / weekly / monthly activity reports.
+  Widget _reportsButton(BuildContext context) => GestureDetector(
+        onTap: () => Navigator.pushNamed(context, '/admin-reports'),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: AppDesign.indigoGradient,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: AppDesign.glow(AppDesign.indigo, opacity: 0.3),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.22),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: const Icon(Icons.description_outlined,
+                    color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Warbixinada',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800)),
+                    Text('Daily / Weekly / Monthly reports + PDF',
+                        style: TextStyle(
+                            color: Colors.white70, fontSize: 11)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios,
+                  color: Colors.white, size: 16),
+            ],
+          ),
+        ),
+      );
 
   void _openAssessments(String title, String subtitle,
       {int? risk, bool guestOnly = false}) {

@@ -9,6 +9,7 @@ const adminRoutes = require("./src/routes/adminRoutes");
 const paymentRoutes = require("./src/routes/paymentRoutes");
 const chatRoutes = require("./src/routes/chatRoutes");
 const bookingRoutes = require("./src/routes/bookingRoutes");
+const reportRoutes = require("./src/routes/reportRoutes");
 const User = require("./src/models/User");
 
 const app = express();
@@ -56,6 +57,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/booking", bookingRoutes);
+app.use("/api/reports", reportRoutes);
 
 app.listen(3000, () => {
   console.log("Server running on http://localhost:3000");
