@@ -21,7 +21,7 @@ class _QMenDizzyScreenState extends State<QMenDizzyScreen> {
   Widget build(BuildContext context) {
     return QuestionWidget(
       theme: QuestionTheme.symptoms(),
-      somalTitle: 'Ma dareemeysaa\nmadax wareer?',
+      somalTitle: 'Madax Wareer Miyaa\nDareemeesaa?',
       englishTitle: '(Do you feel dizzy?)',
       illustration: const Icon(
         Icons.psychology_outlined,

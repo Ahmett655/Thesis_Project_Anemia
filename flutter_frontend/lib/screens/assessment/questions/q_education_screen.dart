@@ -31,7 +31,7 @@ class _QEducationScreenState extends State<QEducationScreen> {
       theme: QuestionTheme.education(),
       somalTitle: _isChild
           ? 'Heerka waxbarasho ee hooyada\n(ama masuulka) cunuggu waa kee?'
-          : 'Heerka waxbarashadaadu\nwaa kee?',
+          : 'Heerka Waxbarshadaada?',
       englishTitle: _isChild
           ? '(What is the education level of the child\'s mother/caregiver?)'
           : '(What is your level of education?)',

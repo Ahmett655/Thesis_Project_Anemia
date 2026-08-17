@@ -21,7 +21,7 @@ class _QSmokingScreenState extends State<QSmokingScreen> {
   Widget build(BuildContext context) {
     return QuestionWidget(
       theme: QuestionTheme.lifestyle(),
-      somalTitle: 'Ma cabtaa sigaar?',
+      somalTitle: 'Sigaar Miyaad Cabtaa?',
       englishTitle: '(Do you smoke?)',
       illustration: const Icon(
         Icons.smoking_rooms_outlined,

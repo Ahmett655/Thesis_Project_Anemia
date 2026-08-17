@@ -24,7 +24,7 @@ class _QBirthHistoryScreenState extends State<QBirthHistoryScreen> {
   Widget build(BuildContext context) {
     return QuestionWidget(
       theme: QuestionTheme.maternal(),
-      somalTitle: 'Immisa jeer ayaad umushay\n5tii sano ee la soo dhaafay?',
+      somalTitle: 'Meeqo Jeer Baad Umushay\n5tii Sano Ee La Soo Dhaafay?',
       englishTitle: '(How many times have you given\nbirth in the past 5 years?)',
       illustration: const Icon(
         Icons.child_friendly_outlined,

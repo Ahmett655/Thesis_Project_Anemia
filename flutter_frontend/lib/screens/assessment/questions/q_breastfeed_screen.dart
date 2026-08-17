@@ -33,7 +33,7 @@ class _QBreastfeedScreenState extends State<QBreastfeedScreen> {
   Widget build(BuildContext context) {
     return QuestionWidget(
       theme: QuestionTheme.child(),
-      somalTitle: 'Dhalashada kadib, goorma ayaa\ncunugga naaska la saaray?',
+      somalTitle: 'Dhalashada Ka Dib Cunuga\nGoormee Ayaa Naaska La Siiyay?',
       englishTitle: '(How soon after birth was the child put to the breast?)',
       illustration: const Icon(
         Icons.child_care_outlined,

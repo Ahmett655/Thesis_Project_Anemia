@@ -21,7 +21,7 @@ class _QHusbandScreenState extends State<QHusbandScreen> {
   Widget build(BuildContext context) {
     return QuestionWidget(
       theme: QuestionTheme.family(),
-      somalTitle: 'Ma la nooshahay\nninkaaga hadda?',
+      somalTitle: 'Ninkaaga Miyaad\nLa Nooshahay Hada?',
       englishTitle: '(Do you live with your husband now?)',
       illustration: const Icon(
         Icons.people_outline,

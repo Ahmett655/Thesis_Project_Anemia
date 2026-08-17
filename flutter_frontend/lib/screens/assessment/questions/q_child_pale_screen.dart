@@ -21,7 +21,7 @@ class _QChildPaleScreenState extends State<QChildPaleScreen> {
   Widget build(BuildContext context) {
     return QuestionWidget(
       theme: QuestionTheme.child(),
-      somalTitle: 'Cunuggu ma u egyahay\nmid cirro ah (midab cad)?',
+      somalTitle: 'Cunuga Ma U Egyahay Mid Midabkiisa\nCad Yahay Ama Boor Leh?',
       englishTitle: '(Does the child look pale (white)?)',
       illustration: const Icon(
         Icons.face_outlined,

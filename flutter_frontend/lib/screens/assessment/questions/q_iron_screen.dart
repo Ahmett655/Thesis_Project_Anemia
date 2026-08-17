@@ -27,7 +27,7 @@ class _QIronScreenState extends State<QIronScreen> {
       theme: QuestionTheme.nutrition(),
       somalTitle: _isChild
           ? 'Cunuggu ma qaataa kaniiniga birta (iron),\nsharoobo ama sprinkles?'
-          : 'Ma qaadataa kaniiniga birta (iron)\nama sharoobadiisa?',
+          : 'Kaniiniga Birta (Ironka) Ama\nSharoobada Ironka Ma Qaadataa?',
       englishTitle: _isChild
           ? '(Is the child taking iron pills, sprinkles or syrup?)'
           : '(Are you taking iron pills or iron syrup?)',

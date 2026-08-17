@@ -31,7 +31,7 @@ class _QAgeAdultsScreenState extends State<QAgeAdultsScreen> {
   Widget build(BuildContext context) {
     return QuestionWidget(
       theme: QuestionTheme.demographics(),
-      somalTitle: 'Waa Imisa Jir?',
+      somalTitle: 'Imisa Jir Baad Tahay?',
       englishTitle: '(How old are you?)',
       illustration: const Icon(
         Icons.cake_outlined,

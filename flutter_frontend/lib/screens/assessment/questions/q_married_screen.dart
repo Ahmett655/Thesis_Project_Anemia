@@ -21,7 +21,7 @@ class _QMarriedScreenState extends State<QMarriedScreen> {
   Widget build(BuildContext context) {
     return QuestionWidget(
       theme: QuestionTheme.family(),
-      somalTitle: 'Ma guursatay?',
+      somalTitle: 'Ma Guursatay?',
       englishTitle: '(Are you married?)',
       illustration: const Icon(
         Icons.favorite_outline,

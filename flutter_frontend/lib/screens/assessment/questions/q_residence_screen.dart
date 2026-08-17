@@ -74,6 +74,8 @@ class _QResidenceScreenState extends State<QResidenceScreen> {
 
   bool get _canProceed => _gobolController.text.trim().isNotEmpty;
 
+  bool get _isChild => AssessmentData.category == 'children';
+
   @override
   Widget build(BuildContext context) {
     final theme = QuestionTheme.location();
@@ -81,7 +83,7 @@ class _QResidenceScreenState extends State<QResidenceScreen> {
       theme: theme,
       illustration: const Icon(Icons.location_on_outlined,
           color: Color(0xFF00796B)),
-      somalTitle: 'Xagee Ku Noolahay?',
+      somalTitle: _isChild ? 'Xagee Ku Noolyahay Cunuga?' : 'Xagee Ku Nooshahay?',
       englishTitle: '(Where do you live?)',
       canProceed: _canProceed,
       onBack: () => Navigator.pop(context),

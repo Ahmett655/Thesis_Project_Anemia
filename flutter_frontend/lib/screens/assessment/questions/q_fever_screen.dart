@@ -26,8 +26,8 @@ class _QFeverScreenState extends State<QFeverScreen> {
     return QuestionWidget(
       theme: QuestionTheme.symptoms(),
       somalTitle: _isChild
-          ? 'Cunuggu ma qandhooday\n2-dii toddobaad ee la soo dhaafay?'
-          : 'Ma qandhaysay\n2-dii toddobaad ee la soo dhaafay?',
+          ? 'Cunuga Qandho Miyaa Isku Arkay\n2-dii Is Buuc Ee U Dambeesay?'
+          : 'Qandho Miyaa Isku Aragtay\n2-dii Is Buuc Ee U Dambeesay?',
       englishTitle: _isChild
           ? '(Has the child had a fever in the last two weeks?)'
           : '(Have you had a fever in the last two weeks?)',

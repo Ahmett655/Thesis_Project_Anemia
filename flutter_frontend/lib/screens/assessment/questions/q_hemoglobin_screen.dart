@@ -43,6 +43,8 @@ class _QHemoglobinScreenState extends State<QHemoglobinScreen> {
     }
   }
 
+  bool get _isChild => AssessmentData.category == 'children';
+
   String get _categoryName {
     switch (AssessmentData.category) {
       case 'men':
@@ -106,7 +108,9 @@ class _QHemoglobinScreenState extends State<QHemoglobinScreen> {
       theme: theme,
       illustration:
           const Icon(Icons.bloodtype, color: Color(0xFFE53935)),
-      somalTitle: 'Ma waxaad samaysay\nbaadhitaan dhiig?',
+      somalTitle: _isChild
+          ? 'Cunuga Baari Taan Dhiig\nMiyaa Loo Sameeyay?'
+          : 'Baari Taan Dhiig\nMiyaad Sameesay?',
       englishTitle: '(Have you had a recent hemoglobin test?)',
       canProceed: _canProceed,
       onBack: () => Navigator.pop(context),

@@ -51,7 +51,7 @@ class _QFirstBirthAgeScreenState extends State<QFirstBirthAgeScreen> {
       theme: theme,
       illustration: const Icon(Icons.cake_outlined,
           color: Color(0xFFC2185B)),
-      somalTitle: 'Imisa jir ayaad ahayd\numushaadi ugu horreysay?',
+      somalTitle: 'Meeqo Sano Ayaad Jirtay\nUmushaadii Ugu Horeesay?',
       englishTitle:
           '(How old were you when you first gave birth?)',
       canProceed: _canProceed,

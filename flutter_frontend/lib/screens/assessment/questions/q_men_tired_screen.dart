@@ -21,7 +21,7 @@ class _QMenTiredScreenState extends State<QMenTiredScreen> {
   Widget build(BuildContext context) {
     return QuestionWidget(
       theme: QuestionTheme.symptoms(),
-      somalTitle: 'Ma dareemeysaa\ndaal badan?',
+      somalTitle: 'Daal Badan Miyaa\nDareemeesaa?',
       englishTitle: '(Do you feel very tired?)',
       illustration: const Icon(
         Icons.sentiment_very_dissatisfied_outlined,

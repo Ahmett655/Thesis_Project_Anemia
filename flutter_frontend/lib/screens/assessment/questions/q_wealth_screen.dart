@@ -12,6 +12,9 @@ class QWealthScreen extends StatefulWidget {
 class _QWealthScreenState extends State<QWealthScreen> {
   String _selected = '';
 
+  // For the children category the respondent is the mother/caregiver.
+  bool get _isChild => AssessmentData.category == 'children';
+
   final List<OptionItem> _options = const [
     OptionItem(
         value: 'poor',
@@ -31,7 +34,9 @@ class _QWealthScreenState extends State<QWealthScreen> {
   Widget build(BuildContext context) {
     return QuestionWidget(
       theme: QuestionTheme.wealth(),
-      somalTitle: 'Xaaladdaada dhaqaale\nsidee tahay?',
+      somalTitle: _isChild
+          ? 'Xaaladdaada dhaqaale\nsidee tahay?'
+          : 'Xaalada Dhaqaale?',
       englishTitle: '(What is your financial situation?)',
       illustration: const Icon(
         Icons.account_balance_wallet_outlined,

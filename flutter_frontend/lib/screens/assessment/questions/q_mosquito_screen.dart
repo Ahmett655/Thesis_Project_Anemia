@@ -12,6 +12,8 @@ class QMosquitoScreen extends StatefulWidget {
 class _QMosquitoScreenState extends State<QMosquitoScreen> {
   String _selected = '';
 
+  bool get _isChild => AssessmentData.category == 'children';
+
   final List<OptionItem> _options = const [
     OptionItem(value: 'yes', label: 'Haa ( Yes )', icon: Icons.check_circle_outline),
     OptionItem(value: 'no',  label: 'Maya ( No )', icon: Icons.cancel_outlined),
@@ -21,7 +23,9 @@ class _QMosquitoScreenState extends State<QMosquitoScreen> {
   Widget build(BuildContext context) {
     return QuestionWidget(
       theme: QuestionTheme.prevention(),
-      somalTitle: 'Ma isticmaashaa\nshabaq kaneeco?',
+      somalTitle: _isChild
+          ? 'Cunuga Maloo Xiraa\nShabaq Kaneeco?'
+          : 'Shabaqa Kaneecada\nMiyaad Isticmaashaa?',
       englishTitle: '(Do you use a mosquito net?)',
       illustration: const Icon(
         Icons.shield_outlined,
