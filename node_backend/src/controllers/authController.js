@@ -6,6 +6,11 @@ const User = require("../models/User");
 const JWT_SECRET = process.env.JWT_SECRET || "anemia_thesis_secret_2026";
 const JWT_EXPIRES_IN = "7d";
 
+// Local part, @, domain, and at least one dot-separated TLD. Deliberately
+// permissive: rejects obvious mistakes without blocking unusual valid addresses.
+const EMAIL_RE = /^[\w.+-]+@[\w-]+(\.[\w-]+)+$/;
+const isValidEmail = (email) => EMAIL_RE.test(String(email).trim().toLowerCase());
+
 // Google OAuth Web Client ID — used to verify ID tokens from the app.
 const GOOGLE_CLIENT_ID =
   process.env.GOOGLE_CLIENT_ID ||
@@ -53,6 +58,13 @@ const register = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Name, email, and password are required",
+      });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid email address",
       });
     }
 
@@ -126,6 +138,13 @@ const login = async (req, res) => {
       });
     }
 
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid email address",
+      });
+    }
+
     // Find user
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
@@ -186,6 +205,13 @@ const forgotPassword = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Email is required",
+      });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid email address",
       });
     }
 

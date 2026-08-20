@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/theme_service.dart';
+import '../../utils/validators.dart';
 import '../../widgets/top_message_banner.dart';
 import '../../widgets/theme_toggle_button.dart';
 
@@ -23,8 +24,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _onSendCode() async {
     final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      TopMessageBanner.warning(context, 'Email-kaaga geli (Enter your email)');
+    final emailErr = Validators.emailError(email);
+    if (emailErr != null) {
+      TopMessageBanner.warning(context, emailErr);
       return;
     }
     setState(() => _loading = true);

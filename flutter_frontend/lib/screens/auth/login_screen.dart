@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/theme_service.dart';
+import '../../utils/validators.dart';
 import '../../widgets/top_message_banner.dart';
 import '../../widgets/theme_toggle_button.dart';
 import '../../widgets/google_signin_button.dart';
@@ -34,6 +35,11 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
         'Email iyo password buuxi (Fill in email and password)',
       );
+      return;
+    }
+    final emailErr = Validators.emailError(email);
+    if (emailErr != null) {
+      TopMessageBanner.warning(context, emailErr);
       return;
     }
 

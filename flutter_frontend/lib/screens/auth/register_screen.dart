@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/theme_service.dart';
+import '../../utils/validators.dart';
 import '../../widgets/top_message_banner.dart';
 import '../../widgets/theme_toggle_button.dart';
 import '../../widgets/google_signin_button.dart';
@@ -46,6 +47,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (firstName.isEmpty || email.isEmpty || password.isEmpty) {
       TopMessageBanner.warning(context,
           'Magaca, email iyo password buuxi (Name, email & password required)');
+      return;
+    }
+    final emailErr = Validators.emailError(email);
+    if (emailErr != null) {
+      TopMessageBanner.warning(context, emailErr);
       return;
     }
     if (password != confirm) {
